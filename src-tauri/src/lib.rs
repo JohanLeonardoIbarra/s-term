@@ -88,6 +88,20 @@ fn read_key_file(path: String) -> Result<String> {
     std::fs::read_to_string(&path).map_err(Error::from)
 }
 
+// ---- Backup commands ------------------------------------------------------
+
+#[tauri::command]
+fn export_connections(path: String, password: String, vault: State<'_, Vault>) -> Result<()> {
+    let bytes = vault.export_bytes(&password)?;
+    std::fs::write(&path, bytes).map_err(Error::from)
+}
+
+#[tauri::command]
+fn import_connections(path: String, password: String, vault: State<'_, Vault>) -> Result<usize> {
+    let data = std::fs::read(&path)?;
+    vault.import_bytes(&data, &password)
+}
+
 // ---- Session commands -----------------------------------------------------
 
 #[tauri::command]
@@ -168,6 +182,8 @@ pub fn run() {
             add_key,
             delete_key,
             read_key_file,
+            export_connections,
+            import_connections,
             create_local_session,
             connect_ssh,
             write_session,

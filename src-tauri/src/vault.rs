@@ -399,4 +399,70 @@ impl Vault {
             .cloned()
             .ok_or_else(|| Error::NotFound(id.to_string()))
     }
+
+    // ---- Backup (export / import) -----------------------------------------
+
+    /// Serialize the whole vault (connections + keys) into a portable,
+    /// password-encrypted backup blob using the same envelope as the vault.
+    pub fn export_bytes(&self, password: &str) -> Result<Vec<u8>> {
+        let guard = self.inner.lock().unwrap();
+        let data = guard.data.as_ref().ok_or(Error::Locked)?;
+        let plaintext = serde_json::to_vec(data)?;
+
+        let mut salt = vec![0u8; SALT_LEN];
+        rand::thread_rng().fill_bytes(&mut salt);
+        let key = derive_key(password, &salt)?;
+        let (nonce, ciphertext) = encrypt(&key, &plaintext)?;
+
+        let file = VaultFile {
+            version: VAULT_VERSION,
+            salt: B64.encode(&salt),
+            nonce: B64.encode(nonce),
+            ciphertext: B64.encode(ciphertext),
+        };
+        Ok(serde_json::to_vec_pretty(&file)?)
+    }
+
+    /// Decrypt a backup blob and merge its connections + keys into the vault.
+    /// Imported items get fresh ids; key references are remapped accordingly.
+    /// Returns the number of connections imported.
+    pub fn import_bytes(&self, data: &[u8], password: &str) -> Result<usize> {
+        let file: VaultFile = serde_json::from_slice(data)
+            .map_err(|_| Error::Other("not a valid s-term backup file".into()))?;
+        let salt = B64
+            .decode(&file.salt)
+            .map_err(|e| Error::Other(e.to_string()))?;
+        let nonce = B64
+            .decode(&file.nonce)
+            .map_err(|e| Error::Other(e.to_string()))?;
+        let ciphertext = B64
+            .decode(&file.ciphertext)
+            .map_err(|e| Error::Other(e.to_string()))?;
+
+        let key = derive_key(password, &salt)?;
+        let plaintext = decrypt(&key, &nonce, &ciphertext)?;
+        let imported: VaultData = serde_json::from_slice(&plaintext)?;
+
+        self.mutate(|vault| {
+            let mut id_map: std::collections::HashMap<String, String> =
+                std::collections::HashMap::new();
+            for mut k in imported.keys {
+                let new_id = Uuid::new_v4().to_string();
+                id_map.insert(k.id.clone(), new_id.clone());
+                k.id = new_id;
+                vault.keys.push(k);
+            }
+
+            let mut added = 0usize;
+            for mut c in imported.connections {
+                c.id = Uuid::new_v4().to_string();
+                if let Some(old) = c.key_id.take() {
+                    c.key_id = id_map.get(&old).cloned();
+                }
+                vault.connections.push(c);
+                added += 1;
+            }
+            Ok(added)
+        })
+    }
 }

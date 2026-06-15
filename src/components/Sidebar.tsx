@@ -9,6 +9,8 @@ interface Props {
   onEditConnection: (c: ConnectionView) => void;
   onDeleteConnection: (c: ConnectionView) => void;
   onManageKeys: () => void;
+  onExport: () => void;
+  onImport: () => void;
   onLock: () => void;
 }
 
@@ -20,6 +22,8 @@ export default function Sidebar({
   onEditConnection,
   onDeleteConnection,
   onManageKeys,
+  onExport,
+  onImport,
   onLock,
 }: Props) {
   const grouped = useMemo(() => {
@@ -51,6 +55,16 @@ export default function Sidebar({
       <div className="sidebar-section-title">
         <span>Connections</span>
         <div>
+          <button className="icon-btn" title="Import connections" onClick={onImport}>
+            ↧
+          </button>
+          <button
+            className="icon-btn"
+            title="Export connections"
+            onClick={onExport}
+          >
+            ↥
+          </button>
           <button className="icon-btn" title="Manage keys" onClick={onManageKeys}>
             🔑
           </button>

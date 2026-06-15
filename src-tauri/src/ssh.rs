@@ -81,13 +81,21 @@ impl SshSession {
         std::thread::spawn(move || {
             // Keep the session alive for the lifetime of the channel.
             let _sess = sess;
-            let mut buf = [0u8; 4096];
+            let mut buf = [0u8; 8192];
+            // Outbound bytes waiting to be sent; we never block on writes so a
+            // full remote window can't stall the read side (and vice versa).
+            let mut outbuf: Vec<u8> = Vec::new();
+            // Consecutive non-EAGAIN read errors; only a sustained run means the
+            // connection is really gone. A single transient error must not kill
+            // the session (this caused spurious "[process exited]" under load).
+            let mut read_errors: u32 = 0;
+            const MAX_READ_ERRORS: u32 = 64;
+
             'outer: loop {
+                // 1. Collect any pending input / control commands.
                 loop {
                     match rx.try_recv() {
-                        Ok(Cmd::Write(data)) => {
-                            let _ = write_all_nb(&mut channel, &data);
-                        }
+                        Ok(Cmd::Write(data)) => outbuf.extend_from_slice(&data),
                         Ok(Cmd::Resize(c, r)) => {
                             let _ = channel.request_pty_size(c as u32, r as u32, None, None);
                         }
@@ -100,26 +108,52 @@ impl SshSession {
                     }
                 }
 
-                match channel.read(&mut buf) {
-                    Ok(0) => {
-                        if channel.eof() {
-                            break;
+                let mut did_work = false;
+
+                // 2. Push as much buffered input as the channel will accept now.
+                if !outbuf.is_empty() {
+                    match channel.write(&outbuf) {
+                        Ok(0) => {}
+                        Ok(n) => {
+                            outbuf.drain(..n);
+                            did_work = true;
                         }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                        // Keep the bytes buffered and retry next iteration.
+                        Err(_) => {}
                     }
-                    Ok(n) => {
-                        let chunk = String::from_utf8_lossy(&buf[..n]).to_string();
-                        if emit_output(&app, &id, chunk).is_err() {
-                            break;
-                        }
-                    }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                    Err(_) => break,
+                    let _ = channel.flush();
                 }
 
-                if channel.eof() {
+                // 3. Drain all currently available output.
+                loop {
+                    match channel.read(&mut buf) {
+                        Ok(0) => break,
+                        Ok(n) => {
+                            read_errors = 0;
+                            did_work = true;
+                            let chunk = String::from_utf8_lossy(&buf[..n]).to_string();
+                            let _ = emit_output(&app, &id, chunk);
+                        }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                            read_errors = 0;
+                            break;
+                        }
+                        Err(_) => {
+                            read_errors += 1;
+                            break;
+                        }
+                    }
+                }
+
+                // 4. Exit only on genuine end-of-stream or a dead connection.
+                if channel.eof() || read_errors >= MAX_READ_ERRORS {
                     break;
                 }
-                std::thread::sleep(Duration::from_millis(8));
+
+                if !did_work {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
             }
 
             let code = channel.exit_status().ok();
@@ -147,20 +181,4 @@ impl SessionBackend for SshSession {
     fn close(&self) {
         let _ = self.tx.send(Cmd::Close);
     }
-}
-
-fn write_all_nb(channel: &mut ssh2::Channel, data: &[u8]) -> std::io::Result<()> {
-    let mut written = 0;
-    while written < data.len() {
-        match channel.write(&data[written..]) {
-            Ok(0) => break,
-            Ok(n) => written += n,
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(Duration::from_millis(2));
-            }
-            Err(e) => return Err(e),
-        }
-    }
-    let _ = channel.flush();
-    Ok(())
 }
