@@ -1,6 +1,6 @@
 [package]
 name = "s-term"
-version = "0.1.0"
+version = "0.1.1"
 description = "Terminal app with multi-session management and an encrypted SSH connection directory"
 authors = ["Johan Ibarra"]
 edition = "2021"
