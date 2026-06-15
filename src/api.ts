@@ -68,6 +68,24 @@ export function readKeyFile(path: string): Promise<string> {
   return invoke("read_key_file", { path });
 }
 
+// ---- Backup (export / import) ---------------------------------------------
+
+/** Writes an encrypted backup of all connections + keys to `path`. */
+export function exportConnections(
+  path: string,
+  password: string
+): Promise<void> {
+  return invoke("export_connections", { path, password });
+}
+
+/** Imports connections + keys from an encrypted backup. Returns count imported. */
+export function importConnections(
+  path: string,
+  password: string
+): Promise<number> {
+  return invoke("import_connections", { path, password });
+}
+
 // ---- Sessions -------------------------------------------------------------
 
 export function createLocalSession(

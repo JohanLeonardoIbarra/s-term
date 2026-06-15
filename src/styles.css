@@ -395,3 +395,7 @@ button.secondary {
   cursor: pointer;
   z-index: 60;
 }
+
+.toast.notice {
+  background: var(--accent);
+}

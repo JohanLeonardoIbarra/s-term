@@ -5,16 +5,28 @@ import Terminal from "./components/Terminal";
 import UnlockVault from "./components/UnlockVault";
 import ConnectionForm from "./components/ConnectionForm";
 import KeyManager from "./components/KeyManager";
+import PasswordPrompt from "./components/PasswordPrompt";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import {
   connectSsh,
   createLocalSession,
   deleteConnection,
+  exportConnections,
+  importConnections,
   listConnections,
   listKeys,
   lockVault,
   vaultIsUnlocked,
 } from "./api";
 import type { ConnectionView, KeyView, Session } from "./types";
+
+interface PromptState {
+  title: string;
+  description?: string;
+  confirm: boolean;
+  submitLabel: string;
+  onSubmit: (password: string) => Promise<void>;
+}
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(false);
@@ -27,6 +39,8 @@ export default function App() {
   const [editing, setEditing] = useState<ConnectionView | null>(null);
   const [showKeys, setShowKeys] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState<PromptState | null>(null);
 
   useEffect(() => {
     vaultIsUnlocked().then(setUnlocked).catch(() => setUnlocked(false));
@@ -87,6 +101,63 @@ export default function App() {
     setActiveId(null);
   }
 
+  async function handleExport() {
+    let path: string | null;
+    try {
+      path = await save({
+        title: "Export connections",
+        defaultPath: "s-term-connections.stbk",
+        filters: [{ name: "s-term backup", extensions: ["stbk"] }],
+      });
+    } catch (err) {
+      setError(String(err));
+      return;
+    }
+    if (!path) return;
+    const target = path;
+    setPrompt({
+      title: "Encrypt backup",
+      description:
+        "Choose a password to encrypt the exported connections and keys.",
+      confirm: true,
+      submitLabel: "Export",
+      onSubmit: async (password) => {
+        await exportConnections(target, password);
+        setPrompt(null);
+        setNotice("Connections exported.");
+      },
+    });
+  }
+
+  async function handleImport() {
+    let selected: string | string[] | null;
+    try {
+      selected = await open({
+        title: "Import connections",
+        multiple: false,
+        directory: false,
+        filters: [{ name: "s-term backup", extensions: ["stbk"] }],
+      });
+    } catch (err) {
+      setError(String(err));
+      return;
+    }
+    if (typeof selected !== "string") return;
+    const source = selected;
+    setPrompt({
+      title: "Import backup",
+      description: "Enter the password used to encrypt this backup.",
+      confirm: false,
+      submitLabel: "Import",
+      onSubmit: async (password) => {
+        const count = await importConnections(source, password);
+        setPrompt(null);
+        await refresh();
+        setNotice(`Imported ${count} connection${count === 1 ? "" : "s"}.`);
+      },
+    });
+  }
+
   if (!unlocked) {
     return <UnlockVault onUnlocked={() => setUnlocked(true)} />;
   }
@@ -107,6 +178,8 @@ export default function App() {
         }}
         onDeleteConnection={handleDeleteConnection}
         onManageKeys={() => setShowKeys(true)}
+        onExport={handleExport}
+        onImport={handleImport}
         onLock={handleLock}
       />
 
@@ -160,9 +233,26 @@ export default function App() {
         />
       )}
 
+      {prompt && (
+        <PasswordPrompt
+          title={prompt.title}
+          description={prompt.description}
+          confirm={prompt.confirm}
+          submitLabel={prompt.submitLabel}
+          onSubmit={prompt.onSubmit}
+          onCancel={() => setPrompt(null)}
+        />
+      )}
+
       {error && (
         <div className="toast" onClick={() => setError(null)}>
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="toast notice" onClick={() => setNotice(null)}>
+          {notice}
         </div>
       )}
     </div>
