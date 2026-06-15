@@ -68,6 +68,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "s-term ${{ github.ref_name }}"
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
