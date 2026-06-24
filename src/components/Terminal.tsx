@@ -12,6 +12,13 @@ interface Props {
   onExit: (sessionId: string) => void;
 }
 
+/**
+ * Batches rapid keystrokes into a single writeSession call every FLUSH_MS.
+ * This dramatically reduces Tauri IPC pressure and prevents the SSH backend
+ * from being overwhelmed by individual per-keystroke write commands.
+ */
+const FLUSH_MS = 12;
+
 export default function Terminal({ sessionId, active, onExit }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XTerm | null>(null);
@@ -43,8 +50,24 @@ export default function Terminal({ sessionId, active, onExit }: Props) {
     termRef.current = term;
     fitRef.current = fit;
 
+    // --- Batched write buffer ---
+    let writeBuf = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushWrites = () => {
+      flushTimer = null;
+      if (writeBuf.length > 0) {
+        const batch = writeBuf;
+        writeBuf = "";
+        void writeSession(sessionId, batch);
+      }
+    };
+
     const writeDisposable = term.onData((data) => {
-      void writeSession(sessionId, data);
+      writeBuf += data;
+      if (flushTimer === null) {
+        flushTimer = setTimeout(flushWrites, FLUSH_MS);
+      }
     });
 
     const resizeDisposable = term.onResize(({ cols, rows }) => {
@@ -78,6 +101,10 @@ export default function Terminal({ sessionId, active, onExit }: Props) {
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      if (flushTimer !== null) {
+        clearTimeout(flushTimer);
+        flushWrites();
+      }
       writeDisposable.dispose();
       resizeDisposable.dispose();
       void unlistenData.then((fn) => fn());

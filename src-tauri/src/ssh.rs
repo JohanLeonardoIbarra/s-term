@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::mpsc::{self, Sender, TryRecvError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use ssh2::Session;
 use tauri::AppHandle;
@@ -85,11 +85,15 @@ impl SshSession {
             // Outbound bytes waiting to be sent; we never block on writes so a
             // full remote window can't stall the read side (and vice versa).
             let mut outbuf: Vec<u8> = Vec::new();
-            // Consecutive non-EAGAIN read errors; only a sustained run means the
-            // connection is really gone. A single transient error must not kill
-            // the session (this caused spurious "[process exited]" under load).
-            let mut read_errors: u32 = 0;
-            const MAX_READ_ERRORS: u32 = 64;
+
+            // --- Time-based health tracking ---
+            // We only kill the session when ALL I/O (reads AND writes) have
+            // failed continuously for IO_DEAD_TIMEOUT.  A single successful
+            // read or write resets the clock, preventing spurious exits when
+            // the channel is temporarily busy (e.g. libssh2 returns EAGAIN
+            // on reads while processing outbound data during fast typing).
+            let mut last_successful_io = Instant::now();
+            const IO_DEAD_TIMEOUT: Duration = Duration::from_secs(8);
 
             'outer: loop {
                 // 1. Collect any pending input / control commands.
@@ -117,6 +121,7 @@ impl SshSession {
                         Ok(n) => {
                             outbuf.drain(..n);
                             did_work = true;
+                            last_successful_io = Instant::now();
                         }
                         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
                         // Keep the bytes buffered and retry next iteration.
@@ -130,24 +135,31 @@ impl SshSession {
                     match channel.read(&mut buf) {
                         Ok(0) => break,
                         Ok(n) => {
-                            read_errors = 0;
                             did_work = true;
+                            last_successful_io = Instant::now();
                             let chunk = String::from_utf8_lossy(&buf[..n]).to_string();
                             let _ = emit_output(&app, &id, chunk);
                         }
                         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                            read_errors = 0;
+                            // Not an error — just no data available right now.
                             break;
                         }
                         Err(_) => {
-                            read_errors += 1;
+                            // Transient error (e.g. EAGAIN mapped to a
+                            // non-WouldBlock kind on some platforms, or
+                            // libssh2 busy with another operation). We do NOT
+                            // kill the session here; the time-based check
+                            // below handles genuinely dead connections.
                             break;
                         }
                     }
                 }
 
                 // 4. Exit only on genuine end-of-stream or a dead connection.
-                if channel.eof() || read_errors >= MAX_READ_ERRORS {
+                if channel.eof() {
+                    break;
+                }
+                if last_successful_io.elapsed() >= IO_DEAD_TIMEOUT {
                     break;
                 }
 
