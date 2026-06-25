@@ -1,3 +1,5 @@
+import Close from "@mui/icons-material/Close";
+
 interface Props {
   title: string;
   message: string;
@@ -17,7 +19,7 @@ export default function ConfirmModal({
         <div className="modal-header">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onCancel}>
-            ✕
+            <Close fontSize="small" />
           </button>
         </div>
         <div className="form">

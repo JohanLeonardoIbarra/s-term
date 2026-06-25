@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import Close from "@mui/icons-material/Close";
 
 interface Props {
   title: string;
@@ -48,7 +49,7 @@ export default function PasswordPrompt({
         <div className="modal-header">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onCancel}>
-            ✕
+            <Close fontSize="small" />
           </button>
         </div>
         <form className="form" onSubmit={handleSubmit}>

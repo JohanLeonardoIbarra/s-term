@@ -1,4 +1,7 @@
 import type { Session } from "../types";
+import Public from "@mui/icons-material/Public";
+import Terminal from "@mui/icons-material/Terminal";
+import Close from "@mui/icons-material/Close";
 
 interface Props {
   sessions: Session[];
@@ -16,7 +19,13 @@ export default function TabBar({ sessions, activeId, onSelect, onClose }: Props)
           className={`tab ${s.id === activeId ? "active" : ""}`}
           onClick={() => onSelect(s.id)}
         >
-          <span className="tab-icon">{s.kind === "ssh" ? "🌐" : "❯"}</span>
+          <span className="tab-icon">
+            {s.kind === "ssh" ? (
+              <Public fontSize="small" />
+            ) : (
+              <Terminal fontSize="small" />
+            )}
+          </span>
           <span className="tab-title">{s.title}</span>
           <button
             className="tab-close"
@@ -25,7 +34,7 @@ export default function TabBar({ sessions, activeId, onSelect, onClose }: Props)
               onClose(s.id);
             }}
           >
-            ✕
+            <Close fontSize="small" />
           </button>
         </div>
       ))}

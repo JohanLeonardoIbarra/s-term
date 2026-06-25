@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { addConnection, updateConnection } from "../api";
+import Close from "@mui/icons-material/Close";
 import type {
   AuthMethod,
   ConnectionInput,
@@ -75,7 +76,7 @@ export default function ConnectionForm({
         <div className="modal-header">
           <h2>{existing ? "Edit connection" : "New connection"}</h2>
           <button className="icon-btn" onClick={onClose}>
-            ✕
+            <Close fontSize="small" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="form">

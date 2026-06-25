@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { addKey, deleteKey, readKeyFile } from "../api";
+import Close from "@mui/icons-material/Close";
+import Key from "@mui/icons-material/Key";
+import Delete from "@mui/icons-material/Delete";
 import type { KeyView } from "../types";
 
 interface Props {
@@ -80,7 +83,7 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
         <div className="modal-header">
           <h2>SSH keys</h2>
           <button className="icon-btn" onClick={onClose}>
-            ✕
+            <Close fontSize="small" />
           </button>
         </div>
 
@@ -88,9 +91,9 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
           {keys.length === 0 && <p className="muted">No keys stored yet.</p>}
           {keys.map((k) => (
             <div key={k.id} className="key-row">
-              <span>🔑 {k.name}</span>
+              <span><Key fontSize="small" /> {k.name}</span>
               <button className="link-danger" onClick={() => handleDelete(k.id, k.name)}>
-                Delete
+                <Delete fontSize="small" /> Delete
               </button>
             </div>
           ))}

@@ -26,14 +26,17 @@ export default function Terminal({ sessionId, active, connecting, onExit, onConn
 
     const term = new XTerm({
       cursorBlink: true,
+      cursorStyle: 'block',
       fontFamily:
         'Menlo, Monaco, "Cascadia Code", "Fira Code", "Courier New", monospace',
-      fontSize: 13,
+      fontSize: 14,
       theme: {
-        background: "#1e1e2e",
-        foreground: "#cdd6f4",
-        cursor: "#f5e0dc",
-        selectionBackground: "#585b70",
+        background: "#000000",
+        foreground: "#e5e2e1",
+        cursor: "#13ff43",
+        cursorAccent: "#13ff43",
+        selectionBackground: "#2979FF",
+        selectionForeground: "#ffffff",
       },
       allowProposedApi: true,
     });
