@@ -70,8 +70,8 @@ export default function ConnectionForm({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop">
+      <div className="modal">
         <div className="modal-header">
           <h2>{existing ? "Edit connection" : "New connection"}</h2>
           <button className="icon-btn" onClick={onClose}>

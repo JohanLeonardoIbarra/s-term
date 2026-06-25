@@ -43,8 +43,8 @@ export default function PasswordPrompt({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop">
+      <div className="modal">
         <div className="modal-header">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onCancel}>

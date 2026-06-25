@@ -5,14 +5,17 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { listen } from "@tauri-apps/api/event";
 import { closeSession, resizeSession, writeSession } from "../api";
 import type { PtyDataEvent, PtyExitEvent } from "../types";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface Props {
   sessionId: string;
   active: boolean;
+  connecting?: boolean;
   onExit: (sessionId: string) => void;
+  onConnected?: (sessionId: string) => void;
 }
 
-export default function Terminal({ sessionId, active, onExit }: Props) {
+export default function Terminal({ sessionId, active, connecting, onExit, onConnected }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -57,6 +60,10 @@ export default function Terminal({ sessionId, active, onExit }: Props) {
     const unlistenData = listen<PtyDataEvent>("pty://data", (event) => {
       if (event.payload.id === sessionId) {
         term.write(event.payload.data);
+        // Signal that connection is established on first data
+        if (onConnected) {
+          onConnected(sessionId);
+        }
       }
     });
 
@@ -107,6 +114,8 @@ export default function Terminal({ sessionId, active, onExit }: Props) {
       className="terminal-pane"
       style={{ display: active ? "block" : "none" }}
       ref={containerRef}
-    />
+    >
+      {connecting && <LoadingOverlay />}
+    </div>
   );
 }

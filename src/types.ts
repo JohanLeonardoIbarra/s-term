@@ -43,6 +43,7 @@ export interface Session {
   title: string;
   kind: SessionKind;
   connectionId?: string;
+  connecting?: boolean;
 }
 
 /** Payload of the `pty://data` event. */

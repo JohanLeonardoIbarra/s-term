@@ -6,11 +6,13 @@ import UnlockVault from "./components/UnlockVault";
 import ConnectionForm from "./components/ConnectionForm";
 import KeyManager from "./components/KeyManager";
 import PasswordPrompt from "./components/PasswordPrompt";
+import ConfirmModal from "./components/ConfirmModal";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
   connectSsh,
   createLocalSession,
   deleteConnection,
+  deleteKey,
   exportConnections,
   importConnections,
   listConnections,
@@ -28,6 +30,12 @@ interface PromptState {
   onSubmit: (password: string) => Promise<void>;
 }
 
+interface ConfirmState {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+}
+
 export default function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [connections, setConnections] = useState<ConnectionView[]>([]);
@@ -41,6 +49,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<PromptState | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   useEffect(() => {
     vaultIsUnlocked().then(setUnlocked).catch(() => setUnlocked(false));
@@ -61,6 +70,12 @@ export default function App() {
     setActiveId(session.id);
   }
 
+  function handleConnected(sessionId: string) {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, connecting: false } : s))
+    );
+  }
+
   async function handleNewLocal() {
     try {
       const id = await createLocalSession(80, 24);
@@ -71,10 +86,22 @@ export default function App() {
   }
 
   async function handleConnect(c: ConnectionView) {
+    // Generate temporary ID for immediate loading state
+    const tempId = `temp-${Date.now()}`;
+    // Add session immediately to show loading animation
+    addSession({ id: tempId, title: c.name, kind: "ssh", connectionId: c.id, connecting: true });
+
     try {
-      const id = await connectSsh(c.id, 80, 24);
-      addSession({ id, title: c.name, kind: "ssh", connectionId: c.id });
+      const realId = await connectSsh(c.id, 80, 24);
+      // Update session with real ID after connection succeeds
+      setSessions((prev) =>
+        prev.map((s) => (s.id === tempId ? { ...s, id: realId } : s))
+      );
+      // Update activeId to the new real ID
+      setActiveId(realId);
     } catch (err) {
+      // Remove session if connection fails
+      handleCloseSession(tempId);
       setError(String(err));
     }
   }
@@ -89,9 +116,16 @@ export default function App() {
     });
   }
 
-  async function handleDeleteConnection(c: ConnectionView) {
-    await deleteConnection(c.id);
-    void refresh();
+  function handleDeleteConnection(c: ConnectionView) {
+    setConfirm({
+      title: "Delete connection",
+      message: `Are you sure you want to delete "${c.name}"?`,
+      onConfirm: async () => {
+        await deleteConnection(c.id);
+        setConfirm(null);
+        void refresh();
+      },
+    });
   }
 
   async function handleLock() {
@@ -205,9 +239,11 @@ export default function App() {
               key={s.id}
               sessionId={s.id}
               active={s.id === activeId}
+              connecting={s.connecting}
               onExit={() => {
                 /* keep tab so the user can read final output */
               }}
+              onConnected={handleConnected}
             />
           ))}
         </div>
@@ -230,6 +266,17 @@ export default function App() {
           keys={keys}
           onChange={() => void refresh()}
           onClose={() => setShowKeys(false)}
+          onDeleteKey={(id, name) => {
+            setConfirm({
+              title: "Delete SSH key",
+              message: `Are you sure you want to delete "${name}"?`,
+              onConfirm: async () => {
+                await deleteKey(id);
+                setConfirm(null);
+                void refresh();
+              },
+            });
+          }}
         />
       )}
 
@@ -241,6 +288,15 @@ export default function App() {
           submitLabel={prompt.submitLabel}
           onSubmit={prompt.onSubmit}
           onCancel={() => setPrompt(null)}
+        />
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
         />
       )}
 

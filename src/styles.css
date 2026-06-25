@@ -108,6 +108,24 @@ textarea {
   font-size: 11px;
   color: var(--muted);
   margin: 8px 0 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+
+.connection-group .group-label:hover {
+  color: var(--text);
+}
+
+.group-chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
 }
 
 .connection-row {
@@ -130,6 +148,17 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: transform 0.1s, background-color 0.1s;
+}
+
+.connection-main:active {
+  transform: scale(0.98);
+  background-color: var(--bg);
+}
+
+.connection-main:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .conn-name {
@@ -398,4 +427,42 @@ button.secondary {
 
 .toast.notice {
   background: var(--accent);
+}
+
+/* ---- Loading Overlay --------------------------------------------------- */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 37, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-icon {
+  font-size: 32px;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: var(--muted);
 }

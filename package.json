@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Terminal app with multi-session management and an encrypted SSH connection directory. Built with Tauri + Rust + React + TypeScript.",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 1425",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",

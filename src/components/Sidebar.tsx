@@ -1,5 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ConnectionView } from "../types";
+
+interface CollapsedState {
+  [key: string]: boolean;
+}
 
 interface Props {
   connections: ConnectionView[];
@@ -26,6 +30,9 @@ export default function Sidebar({
   onImport,
   onLock,
 }: Props) {
+  const [disabledConnections, setDisabledConnections] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>({});
+
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectionView[]>();
     for (const c of connections) {
@@ -38,6 +45,28 @@ export default function Sidebar({
       a[0].localeCompare(b[0])
     );
   }, [connections]);
+
+  const handleConnect = (c: ConnectionView) => {
+    if (disabledConnections.has(c.id)) return;
+
+    setDisabledConnections((prev) => new Set(prev).add(c.id));
+    onConnect(c);
+
+    setTimeout(() => {
+      setDisabledConnections((prev) => {
+        const next = new Set(prev);
+        next.delete(c.id);
+        return next;
+      });
+    }, 1000);
+  };
+
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
 
   return (
     <aside className="sidebar">
@@ -84,12 +113,21 @@ export default function Sidebar({
         )}
         {grouped.map(([groupName, items]) => (
           <div key={groupName} className="connection-group">
-            <div className="group-label">{groupName}</div>
-            {items.map((c) => (
+            <button
+              className="group-label"
+              onClick={() => toggleGroup(groupName)}
+            >
+              <span className="group-chevron">
+                {collapsedGroups[groupName] ? "▶" : "▼"}
+              </span>
+              {groupName}
+            </button>
+            {!collapsedGroups[groupName] && items.map((c) => (
               <div key={c.id} className="connection-row">
                 <button
                   className="connection-main"
-                  onClick={() => onConnect(c)}
+                  onClick={() => handleConnect(c)}
+                  disabled={disabledConnections.has(c.id)}
                   title={`${c.username}@${c.host}:${c.port}`}
                 >
                   <span className="conn-name">{c.name}</span>

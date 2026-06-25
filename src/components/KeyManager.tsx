@@ -7,9 +7,10 @@ interface Props {
   keys: KeyView[];
   onChange: () => void;
   onClose: () => void;
+  onDeleteKey?: (id: string, name: string) => void;
 }
 
-export default function KeyManager({ keys, onChange, onClose }: Props) {
+export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Props) {
   const [name, setName] = useState("");
   const [privateKey, setPrivateKey] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -65,14 +66,17 @@ export default function KeyManager({ keys, onChange, onClose }: Props) {
     }
   }
 
-  async function handleDelete(id: string) {
-    await deleteKey(id);
-    onChange();
+  function handleDelete(id: string, name: string) {
+    if (onDeleteKey) {
+      onDeleteKey(id, name);
+    } else {
+      deleteKey(id).then(() => onChange());
+    }
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop">
+      <div className="modal">
         <div className="modal-header">
           <h2>SSH keys</h2>
           <button className="icon-btn" onClick={onClose}>
@@ -85,7 +89,7 @@ export default function KeyManager({ keys, onChange, onClose }: Props) {
           {keys.map((k) => (
             <div key={k.id} className="key-row">
               <span>🔑 {k.name}</span>
-              <button className="link-danger" onClick={() => handleDelete(k.id)}>
+              <button className="link-danger" onClick={() => handleDelete(k.id, k.name)}>
                 Delete
               </button>
             </div>
