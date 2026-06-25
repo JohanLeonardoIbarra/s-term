@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { addConnection, updateConnection } from "../api";
 import Close from "@mui/icons-material/Close";
+import { useTranslation } from "../i18n";
 import type {
   AuthMethod,
   ConnectionInput,
@@ -21,6 +22,7 @@ export default function ConnectionForm({
   onSaved,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState(existing?.name ?? "");
   const [host, setHost] = useState(existing?.host ?? "");
   const [port, setPort] = useState(existing?.port ?? 22);
@@ -38,11 +40,11 @@ export default function ConnectionForm({
     e.preventDefault();
     setError(null);
     if (!name.trim() || !host.trim() || !username.trim()) {
-      setError("Name, host and username are required.");
+      setError(t("conn.errRequired"));
       return;
     }
     if (authMethod === "key" && !keyId) {
-      setError("Select a stored key or add one first.");
+      setError(t("conn.errKey"));
       return;
     }
     const input: ConnectionInput = {
@@ -74,23 +76,23 @@ export default function ConnectionForm({
     <div className="modal-backdrop">
       <div className="modal">
         <div className="modal-header">
-          <h2>{existing ? "Edit connection" : "New connection"}</h2>
+          <h2>{existing ? t("conn.edit") : t("conn.new")}</h2>
           <button className="icon-btn" onClick={onClose}>
             <Close fontSize="small" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="form">
           <label>
-            Name
+            {t("conn.name")}
             <input value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <div className="row">
             <label style={{ flex: 3 }}>
-              Host
+              {t("conn.host")}
               <input value={host} onChange={(e) => setHost(e.target.value)} />
             </label>
             <label style={{ flex: 1 }}>
-              Port
+              {t("conn.port")}
               <input
                 type="number"
                 value={port}
@@ -99,32 +101,32 @@ export default function ConnectionForm({
             </label>
           </div>
           <label>
-            Username
+            {t("conn.username")}
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
           </label>
           <label>
-            Group (optional)
+            {t("conn.group")}
             <input value={group} onChange={(e) => setGroup(e.target.value)} />
           </label>
           <label>
-            Authentication
+            {t("conn.auth")}
             <select
               value={authMethod}
               onChange={(e) => setAuthMethod(e.target.value as AuthMethod)}
             >
-              <option value="key">Private key</option>
-              <option value="password">Password</option>
-              <option value="agent">SSH agent</option>
+              <option value="key">{t("conn.auth.key")}</option>
+              <option value="password">{t("conn.auth.password")}</option>
+              <option value="agent">{t("conn.auth.agent")}</option>
             </select>
           </label>
           {authMethod === "key" && (
             <label>
-              Key
+              {t("conn.key")}
               <select value={keyId} onChange={(e) => setKeyId(e.target.value)}>
-                <option value="">— select a key —</option>
+                <option value="">{t("conn.selectKey")}</option>
                 {keys.map((k) => (
                   <option key={k.id} value={k.id}>
                     {k.name}
@@ -135,7 +137,7 @@ export default function ConnectionForm({
           )}
           {authMethod === "password" && (
             <label>
-              Password {existing && "(leave blank to keep current)"}
+              {t("conn.password")} {existing && <small className="muted">{t("conn.passwordKeep")}</small>}
               <input
                 type="password"
                 value={password}
@@ -145,7 +147,7 @@ export default function ConnectionForm({
           )}
           {error && <div className="error">{error}</div>}
           <button type="submit" disabled={busy}>
-            {busy ? "Saving…" : "Save connection"}
+            {busy ? t("conn.saving") : t("conn.save")}
           </button>
         </form>
       </div>

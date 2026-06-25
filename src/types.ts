@@ -1,5 +1,13 @@
 export type AuthMethod = "key" | "password" | "agent";
 
+export interface Settings {
+  theme: "dark" | "light";
+  language: string;
+  uiFontSize: number;
+  terminalFontSize: number;
+  defaultTerminal: string;
+}
+
 export interface ConnectionView {
   id: string;
   name: string;

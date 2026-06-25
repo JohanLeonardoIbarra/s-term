@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
 import { initVault, unlockVault, vaultExists } from "../api";
+import { useTranslation } from "../i18n";
 
 interface Props {
   onUnlocked: () => void;
 }
 
 export default function UnlockVault({ onUnlocked }: Props) {
+  const { t } = useTranslation();
   const [exists, setExists] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -20,11 +22,11 @@ export default function UnlockVault({ onUnlocked }: Props) {
     e.preventDefault();
     setError(null);
     if (!password) {
-      setError("Enter a master password.");
+      setError(t("vault.enterPassword"));
       return;
     }
     if (!exists && password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("vault.noMatch"));
       return;
     }
     setBusy(true);
@@ -43,7 +45,7 @@ export default function UnlockVault({ onUnlocked }: Props) {
   }
 
   if (exists === null) {
-    return <div className="vault-screen">Loading…</div>;
+    return <div className="vault-screen">{t("vault.loading")}</div>;
   }
 
   return (
@@ -52,12 +54,12 @@ export default function UnlockVault({ onUnlocked }: Props) {
         <h1>s-term</h1>
         <p className="vault-subtitle">
           {exists
-            ? "Enter your master password to unlock the connection vault."
-            : "Create a master password to encrypt your SSH connections and keys."}
+            ? t("vault.unlockSubtitle")
+            : t("vault.createSubtitle")}
         </p>
         <input
           type="password"
-          placeholder="Master password"
+          placeholder={t("vault.masterPassword")}
           value={password}
           autoFocus
           onChange={(e) => setPassword(e.target.value)}
@@ -65,19 +67,18 @@ export default function UnlockVault({ onUnlocked }: Props) {
         {!exists && (
           <input
             type="password"
-            placeholder="Confirm password"
+            placeholder={t("vault.confirmPassword")}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
           />
         )}
         {error && <div className="error">{error}</div>}
         <button type="submit" disabled={busy}>
-          {busy ? "Working…" : exists ? "Unlock" : "Create vault"}
+          {busy ? t("vault.working") : exists ? t("vault.unlock") : t("vault.create")}
         </button>
         {!exists && (
           <p className="vault-hint">
-            There is no password recovery. If you lose this password, the
-            encrypted data cannot be read.
+            {t("vault.hint")}
           </p>
         )}
       </form>

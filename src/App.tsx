@@ -7,6 +7,7 @@ import ConnectionForm from "./components/ConnectionForm";
 import KeyManager from "./components/KeyManager";
 import PasswordPrompt from "./components/PasswordPrompt";
 import ConfirmModal from "./components/ConfirmModal";
+import SettingsModal from "./components/SettingsModal";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
   connectSsh,
@@ -17,10 +18,13 @@ import {
   importConnections,
   listConnections,
   listKeys,
+  listTerminals,
   lockVault,
   vaultIsUnlocked,
 } from "./api";
-import type { ConnectionView, KeyView, Session } from "./types";
+import { getSettings, saveSettings } from "./settings";
+import { useTranslation } from "./i18n";
+import type { ConnectionView, KeyView, Session, Settings } from "./types";
 
 interface PromptState {
   title: string;
@@ -37,22 +41,52 @@ interface ConfirmState {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [unlocked, setUnlocked] = useState(false);
   const [connections, setConnections] = useState<ConnectionView[]>([]);
   const [keys, setKeys] = useState<KeyView[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [availableTerminals, setAvailableTerminals] = useState<string[]>([]);
 
   const [showConnForm, setShowConnForm] = useState(false);
   const [editing, setEditing] = useState<ConnectionView | null>(null);
   const [showKeys, setShowKeys] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<PromptState | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [settings, setSettings] = useState<Settings>(getSettings());
+
+  const handleSaveSettings = (newSettings: Settings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+    setShowSettings(false);
+  };
+
+  // Apply theme to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === "light") {
+      root.setAttribute("data-theme", "light");
+    } else {
+      root.removeAttribute("data-theme");
+    }
+  }, [settings.theme]);
+
+  // Apply UI font size to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--ui-font-size", `${settings.uiFontSize}px`);
+  }, [settings.uiFontSize]);
 
   useEffect(() => {
     vaultIsUnlocked().then(setUnlocked).catch(() => setUnlocked(false));
+  }, []);
+
+  useEffect(() => {
+    listTerminals().then(setAvailableTerminals).catch(console.error);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -76,9 +110,10 @@ export default function App() {
     );
   }
 
-  async function handleNewLocal() {
+  async function handleNewLocal(terminal?: string) {
     try {
-      const id = await createLocalSession(80, 24);
+      const terminalToUse = terminal || (settings.defaultTerminal === "auto" ? undefined : settings.defaultTerminal);
+      const id = await createLocalSession(80, 24, terminalToUse);
       addSession({ id, title: "Local", kind: "local" });
     } catch (err) {
       setError(String(err));
@@ -118,8 +153,8 @@ export default function App() {
 
   function handleDeleteConnection(c: ConnectionView) {
     setConfirm({
-      title: "Delete connection",
-      message: `Are you sure you want to delete "${c.name}"?`,
+      title: t("app.deleteConnTitle"),
+      message: t("app.deleteConnMsg", { name: c.name }),
       onConfirm: async () => {
         await deleteConnection(c.id);
         setConfirm(null);
@@ -139,7 +174,7 @@ export default function App() {
     let path: string | null;
     try {
       path = await save({
-        title: "Export connections",
+        title: t("app.exportTitle"),
         defaultPath: "s-term-connections.stbk",
         filters: [{ name: "s-term backup", extensions: ["stbk"] }],
       });
@@ -150,15 +185,14 @@ export default function App() {
     if (!path) return;
     const target = path;
     setPrompt({
-      title: "Encrypt backup",
-      description:
-        "Choose a password to encrypt the exported connections and keys.",
+      title: t("app.encryptTitle"),
+      description: t("app.encryptDesc"),
       confirm: true,
-      submitLabel: "Export",
+      submitLabel: t("app.exportLabel"),
       onSubmit: async (password) => {
         await exportConnections(target, password);
         setPrompt(null);
-        setNotice("Connections exported.");
+        setNotice(t("app.exported"));
       },
     });
   }
@@ -167,7 +201,7 @@ export default function App() {
     let selected: string | string[] | null;
     try {
       selected = await open({
-        title: "Import connections",
+        title: t("app.importTitle"),
         multiple: false,
         directory: false,
         filters: [{ name: "s-term backup", extensions: ["stbk"] }],
@@ -179,15 +213,15 @@ export default function App() {
     if (typeof selected !== "string") return;
     const source = selected;
     setPrompt({
-      title: "Import backup",
-      description: "Enter the password used to encrypt this backup.",
+      title: t("app.importBackupTitle"),
+      description: t("app.importDesc"),
       confirm: false,
-      submitLabel: "Import",
+      submitLabel: t("app.importLabel"),
       onSubmit: async (password) => {
         const count = await importConnections(source, password);
         setPrompt(null);
         await refresh();
-        setNotice(`Imported ${count} connection${count === 1 ? "" : "s"}.`);
+        setNotice(t("app.imported", { count }));
       },
     });
   }
@@ -215,6 +249,9 @@ export default function App() {
         onExport={handleExport}
         onImport={handleImport}
         onLock={handleLock}
+        onOpenSettings={() => setShowSettings(true)}
+        availableTerminals={availableTerminals}
+        defaultTerminal={settings.defaultTerminal}
       />
 
       <main className="workspace">
@@ -227,10 +264,9 @@ export default function App() {
         <div className="terminal-area">
           {sessions.length === 0 && (
             <div className="empty-state">
-              <h2>No active sessions</h2>
+              <h2>{t("app.noSessions")}</h2>
               <p>
-                Open a local terminal or connect to a saved SSH host from the
-                sidebar.
+                {t("app.openHint")}
               </p>
             </div>
           )}
@@ -244,6 +280,7 @@ export default function App() {
                 /* keep tab so the user can read final output */
               }}
               onConnected={handleConnected}
+              terminalFontSize={settings.terminalFontSize}
             />
           ))}
         </div>
@@ -297,6 +334,14 @@ export default function App() {
           message={confirm.message}
           onConfirm={confirm.onConfirm}
           onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          onSave={handleSaveSettings}
+          onCancel={() => setShowSettings(false)}
         />
       )}
 

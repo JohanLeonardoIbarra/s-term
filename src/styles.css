@@ -1,5 +1,5 @@
 :root {
-  /* Monolithic Terminal Color System */
+  /* Monolithic Terminal Color System - Dark Theme (Default) */
   --surface: #131313;
   --surface-dim: #131313;
   --surface-bright: #393939;
@@ -61,9 +61,117 @@
   
   /* Logic Blue for focus states */
   --logic-blue: #2979FF;
-  
+  --border-slate: #333333;
+  --surface-base: #000000;
+  --surface-active: #1e1e1e;
+  --ui-font-size: 14px;
+
+  /* Typography Scale - proportional sizing based on base font size */
+  --font-scale-label-caps: 0.7;
+  --font-scale-body-sm: 0.85;
+  --font-scale-body-md: 1;
+  --font-scale-code-sm: 0.85;
+  --font-scale-code-md: 1;
+  --font-scale-headline-sm: 1.3;
+
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color-scheme: dark;
+}
+
+/* Global scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--on-surface-variant);
+}
+
+/* Light Theme */
+:root[data-theme="light"] {
+  --surface: #f5f5f5;
+  --surface-dim: #e0e0e0;
+  --surface-bright: #ffffff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f0f0f0;
+  --surface-container: #e8e8e8;
+  --surface-container-high: #d0d0d0;
+  --surface-container-highest: #c0c0c0;
+  --on-surface: #1a1a1a;
+  --on-surface-variant: #4a4a4a;
+  --inverse-surface: #2a2a2a;
+  --inverse-on-surface: #f5f5f5;
+  --outline: #7a7a7a;
+  --outline-variant: #c0c0c0;
+  --surface-tint: #4a4a4a;
+  --primary: #1a1a1a;
+  --on-primary: #ffffff;
+  --primary-container: #e0e0e0;
+  --on-primary-container: #1a1a1a;
+  --inverse-primary: #e0e0e0;
+  --secondary: #1a3a1a;
+  --on-secondary: #ffffff;
+  --secondary-container: #c8e6c8;
+  --on-secondary-container: #1a3a1a;
+  --tertiary: #1a2a4a;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #d0e0ff;
+  --on-tertiary-container: #1a2a4a;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #410002;
+  --primary-fixed: #e0e0e0;
+  --primary-fixed-dim: #c0c0c0;
+  --on-primary-fixed: #1a1a1a;
+  --on-primary-fixed-variant: #4a4a4a;
+  --secondary-fixed: #c8e6c8;
+  --secondary-fixed-dim: #a8d8a8;
+  --on-secondary-fixed: #1a3a1a;
+  --on-secondary-fixed-variant: #2a4a2a;
+  --tertiary-fixed: #d0e0ff;
+  --tertiary-fixed-dim: #a8c8ff;
+  --on-tertiary-fixed: #1a2a4a;
+  --on-tertiary-fixed-variant: #2a3a5a;
+  --background: #f5f5f5;
+  --on-background: #1a1a1a;
+  --surface-variant: #e0e0e0;
+  --border-slate: #cccccc;
+  --surface-base: #ffffff;
+  --surface-active: #e8e8e8;
+
+  color-scheme: light;
+}
+
+/* Light theme specific overrides */
+:root[data-theme="light"] button.primary {
+  background: #24254f;
+}
+
+:root[data-theme="light"] button.primary:hover {
+  background: #1e1f42;
+}
+
+:root[data-theme="light"] .terminal-area {
+  background: #000000;
+}
+
+:root[data-theme="light"] .loading-text {
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .loading-icon {
+  color: #ffffff;
 }
 
 * {
@@ -87,6 +195,12 @@ button {
   color: inherit;
 }
 
+/* Keep icons at fixed size, unaffected by ui-font-size */
+button svg,
+.icon-btn svg {
+  font-size: inherit !important;
+}
+
 input,
 select,
 textarea {
@@ -97,7 +211,7 @@ textarea {
   color: var(--text);
   border-radius: 0;
   padding: 8px 0;
-  font-size: 13px;
+  font-size: calc(var(--ui-font-size) * 0.92);
   width: 100%;
 }
 
@@ -117,49 +231,49 @@ textarea {
 
 .headline-sm {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 18px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-headline-sm));
   font-weight: 600;
-  line-height: 24px;
+  line-height: calc(var(--ui-font-size) * 1.7);
   letter-spacing: -0.01em;
 }
 
 .body-md {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-body-md));
   font-weight: 400;
-  line-height: 20px;
+  line-height: calc(var(--ui-font-size) * 1.4);
   letter-spacing: 0em;
 }
 
 .body-sm {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-body-sm));
   font-weight: 400;
-  line-height: 16px;
+  line-height: calc(var(--ui-font-size) * 1.15);
   letter-spacing: 0em;
 }
 
 .code-md {
   font-family: "Fira Code", "Cascadia Code", monospace;
-  font-size: 14px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-code-md));
   font-weight: 500;
-  line-height: 20px;
+  line-height: calc(var(--ui-font-size) * 1.4);
   letter-spacing: -0.02em;
 }
 
 .code-sm {
   font-family: "Fira Code", "Cascadia Code", monospace;
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-code-sm));
   font-weight: 400;
-  line-height: 16px;
+  line-height: calc(var(--ui-font-size) * 1.15);
   letter-spacing: -0.02em;
 }
 
 .label-caps {
   font-family: "Fira Code", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-label-caps));
   font-weight: 700;
-  line-height: 12px;
+  line-height: calc(var(--ui-font-size) * 0.85);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -192,7 +306,7 @@ textarea {
 
 .brand {
   font-weight: 700;
-  font-size: 16px;
+  font-size: calc(var(--ui-font-size) * 1.15);
   letter-spacing: 0.5px;
   color: var(--accent);
 }
@@ -201,7 +315,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: calc(var(--ui-font-size) * 0.8);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
@@ -217,7 +331,7 @@ textarea {
 }
 
 .connection-group .group-label {
-  font-size: 11px;
+  font-size: calc(var(--ui-font-size) * 0.8);
   color: var(--muted);
   margin: 8px 0 4px;
   background: none;
@@ -236,7 +350,7 @@ textarea {
 }
 
 .group-chevron {
-  font-size: 10px;
+  font-size: calc(var(--ui-font-size) * 0.72);
   transition: transform 0.2s;
 }
 
@@ -274,12 +388,10 @@ textarea {
 }
 
 .conn-name {
-  font-size: 13px;
   font-weight: 600;
 }
 
 .conn-sub {
-  font-size: 11px;
   color: var(--muted);
 }
 
@@ -316,7 +428,7 @@ textarea {
   padding: 0 12px;
   height: 36px;
   border-right: 1px solid var(--border);
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * 0.85);
   color: #c6c6c7;
   white-space: nowrap;
 }
@@ -328,7 +440,7 @@ textarea {
 }
 
 .tab-close {
-  font-size: 11px;
+  font-size: calc(var(--ui-font-size) * 0.8);
   color: var(--muted);
   padding: 2px 4px;
   border-radius: 0;
@@ -368,7 +480,7 @@ textarea {
   padding: 4px 6px;
   border-radius: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(var(--ui-font-size) * 0.92);
 }
 
 .icon-btn:hover {
@@ -402,12 +514,12 @@ button.secondary {
 
 .link-danger {
   color: var(--danger);
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * 0.85);
 }
 
 .muted {
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * 0.85);
 }
 
 /* ---- Modals -------------------------------------------------------------- */
@@ -433,6 +545,12 @@ button.secondary {
   padding: 16px;
 }
 
+@media (max-height: 720px) {
+  .modal > .form {
+    padding-right: 10px; /* 16px base + 10px extra para scrollbar */
+  }
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -455,7 +573,7 @@ button.secondary {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * 0.85);
   color: var(--muted);
 }
 
@@ -466,7 +584,7 @@ button.secondary {
 
 .error {
   color: var(--danger);
-  font-size: 12px;
+  font-size: calc(var(--ui-font-size) * 0.85);
 }
 
 .key-list {
@@ -484,7 +602,7 @@ button.secondary {
   border: 1px solid var(--border);
   border-radius: 0;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: calc(var(--ui-font-size) * 0.92);
 }
 
 /* ---- Vault screen -------------------------------------------------------- */

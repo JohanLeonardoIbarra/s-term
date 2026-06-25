@@ -1,4 +1,5 @@
 import Close from "@mui/icons-material/Close";
+import { useTranslation } from "../i18n";
 
 interface Props {
   title: string;
@@ -13,6 +14,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="modal-backdrop">
       <div className="modal">
@@ -26,10 +28,10 @@ export default function ConfirmModal({
           <p className="muted">{message}</p>
           <div className="row" style={{ justifyContent: "flex-end", marginTop: "12px" }}>
             <button className="secondary" onClick={onCancel}>
-              Cancel
+              {t("confirm.cancel")}
             </button>
             <button className="primary" onClick={onConfirm}>
-              Confirm
+              {t("confirm.confirm")}
             </button>
           </div>
         </div>

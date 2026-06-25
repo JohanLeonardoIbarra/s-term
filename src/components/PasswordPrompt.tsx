@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import Close from "@mui/icons-material/Close";
+import { useTranslation } from "../i18n";
 
 interface Props {
   title: string;
@@ -18,6 +19,7 @@ export default function PasswordPrompt({
   onSubmit,
   onCancel,
 }: Props) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +29,11 @@ export default function PasswordPrompt({
     e.preventDefault();
     setError(null);
     if (!password) {
-      setError("Enter a password.");
+      setError(t("prompt.enterPassword"));
       return;
     }
     if (confirm && password !== confirmPw) {
-      setError("Passwords do not match.");
+      setError(t("prompt.noMatch"));
       return;
     }
     setBusy(true);
@@ -55,7 +57,7 @@ export default function PasswordPrompt({
         <form className="form" onSubmit={handleSubmit}>
           {description && <p className="muted">{description}</p>}
           <label>
-            Password
+            {t("prompt.password")}
             <input
               type="password"
               value={password}
@@ -65,7 +67,7 @@ export default function PasswordPrompt({
           </label>
           {confirm && (
             <label>
-              Confirm password
+              {t("prompt.confirmPassword")}
               <input
                 type="password"
                 value={confirmPw}
@@ -75,7 +77,7 @@ export default function PasswordPrompt({
           )}
           {error && <div className="error">{error}</div>}
           <button type="submit" disabled={busy}>
-            {busy ? "Working…" : submitLabel}
+            {busy ? t("prompt.working") : submitLabel}
           </button>
         </form>
       </div>

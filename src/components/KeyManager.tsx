@@ -4,6 +4,7 @@ import { addKey, deleteKey, readKeyFile } from "../api";
 import Close from "@mui/icons-material/Close";
 import Key from "@mui/icons-material/Key";
 import Delete from "@mui/icons-material/Delete";
+import { useTranslation } from "../i18n";
 import type { KeyView } from "../types";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [privateKey, setPrivateKey] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -48,7 +50,7 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
     e.preventDefault();
     setError(null);
     if (!name.trim() || !privateKey.trim()) {
-      setError("Name and private key contents are required.");
+      setError(t("keys.errRequired"));
       return;
     }
     setBusy(true);
@@ -81,36 +83,36 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
     <div className="modal-backdrop">
       <div className="modal">
         <div className="modal-header">
-          <h2>SSH keys</h2>
+          <h2>{t("keys.title")}</h2>
           <button className="icon-btn" onClick={onClose}>
             <Close fontSize="small" />
           </button>
         </div>
 
         <div className="key-list">
-          {keys.length === 0 && <p className="muted">No keys stored yet.</p>}
+          {keys.length === 0 && <p className="muted">{t("keys.empty")}</p>}
           {keys.map((k) => (
             <div key={k.id} className="key-row">
               <span><Key fontSize="small" /> {k.name}</span>
               <button className="link-danger" onClick={() => handleDelete(k.id, k.name)}>
-                <Delete fontSize="small" /> Delete
+                <Delete fontSize="small" /> {t("keys.delete")}
               </button>
             </div>
           ))}
         </div>
 
         <form onSubmit={handleSubmit} className="form">
-          <h3>Add a key</h3>
+          <h3>{t("keys.addTitle")}</h3>
           <label>
-            Name
+            {t("keys.name")}
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. prod-server"
+              placeholder={t("keys.namePlaceholder")}
             />
           </label>
           <label>
-            Private key (.pem / OpenSSH)
+            {t("keys.private")}
             <textarea
               value={privateKey}
               onChange={(e) => setPrivateKey(e.target.value)}
@@ -119,10 +121,10 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
             />
           </label>
           <button type="button" className="secondary" onClick={handleImportFile}>
-            Import from file…
+            {t("keys.importFile")}
           </button>
           <label>
-            Passphrase (optional)
+            {t("keys.passphrase")}
             <input
               type="password"
               value={passphrase}
@@ -131,7 +133,7 @@ export default function KeyManager({ keys, onChange, onClose, onDeleteKey }: Pro
           </label>
           {error && <div className="error">{error}</div>}
           <button type="submit" disabled={busy}>
-            {busy ? "Saving…" : "Save key"}
+            {busy ? t("keys.saving") : t("keys.save")}
           </button>
         </form>
       </div>

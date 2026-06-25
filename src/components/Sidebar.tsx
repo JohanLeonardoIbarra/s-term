@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Lock from "@mui/icons-material/Lock";
+import Settings from "@mui/icons-material/Settings";
 import Key from "@mui/icons-material/Key";
 import FileDownload from "@mui/icons-material/FileDownload";
 import FileUpload from "@mui/icons-material/FileUpload";
@@ -8,6 +9,8 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
+import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
+import { useTranslation } from "../i18n";
 import type { ConnectionView } from "../types";
 
 interface CollapsedState {
@@ -17,7 +20,7 @@ interface CollapsedState {
 interface Props {
   connections: ConnectionView[];
   onConnect: (c: ConnectionView) => void;
-  onNewLocal: () => void;
+  onNewLocal: (terminal?: string) => void;
   onNewConnection: () => void;
   onEditConnection: (c: ConnectionView) => void;
   onDeleteConnection: (c: ConnectionView) => void;
@@ -25,6 +28,9 @@ interface Props {
   onExport: () => void;
   onImport: () => void;
   onLock: () => void;
+  onOpenSettings: () => void;
+  availableTerminals?: string[];
+  defaultTerminal?: string;
 }
 
 export default function Sidebar({
@@ -38,9 +44,16 @@ export default function Sidebar({
   onExport,
   onImport,
   onLock,
+  onOpenSettings,
+  availableTerminals = [],
+  defaultTerminal = "auto",
 }: Props) {
+  const { t } = useTranslation();
   const [disabledConnections, setDisabledConnections] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>({});
+  const [showTerminalSelector, setShowTerminalSelector] = useState(false);
+  const [selectedTerminal, setSelectedTerminal] = useState(defaultTerminal);
+  const terminalSelectorRef = useRef<HTMLDivElement>(null);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectionView[]>();
@@ -77,38 +90,115 @@ export default function Sidebar({
     }));
   };
 
+  const handleNewLocal = (terminal?: string) => {
+    setShowTerminalSelector(false);
+    onNewLocal(terminal);
+  };
+
+  const handleTerminalSelect = (terminal: string) => {
+    setSelectedTerminal(terminal);
+    if (terminal === "auto") {
+      handleNewLocal();
+    } else {
+      handleNewLocal(terminal);
+    }
+  };
+
+  // Cerrar popup al hacer clic fuera
+  useEffect(() => {
+    if (!showTerminalSelector) return;
+    const handler = (e: MouseEvent) => {
+      if (terminalSelectorRef.current && !terminalSelectorRef.current.contains(e.target as Node)) {
+        setShowTerminalSelector(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showTerminalSelector]);
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <span className="brand">s-term</span>
-        <button className="icon-btn" title="Lock vault" onClick={onLock}>
-          <Lock fontSize="small" />
-        </button>
+        <div>
+          <button className="icon-btn" title={t("sidebar.settings")} onClick={onOpenSettings}>
+            <Settings fontSize="small" />
+          </button>
+          <button className="icon-btn" title={t("sidebar.lock")} onClick={onLock}>
+            <Lock fontSize="small" />
+          </button>
+        </div>
       </div>
 
-      <button className="primary block" onClick={onNewLocal}>
-        + Local terminal
-      </button>
+      <div ref={terminalSelectorRef} style={{ display: "flex", gap: "4px", position: "relative" }}>
+        <button className="primary" style={{ flex: 1 }} onClick={() => handleNewLocal()}>
+          {t("sidebar.localTerminal")}
+        </button>
+        {availableTerminals.length > 1 && (
+          <button
+            className="primary"
+            style={{ minWidth: "40px", padding: "0 12px" }}
+            onClick={() => setShowTerminalSelector(!showTerminalSelector)}
+          >
+            <ArrowDropDown fontSize="small" />
+          </button>
+        )}
+        {showTerminalSelector && availableTerminals.length > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              background: "var(--bg-alt)",
+              border: "1px solid var(--border)",
+              borderRadius: "4px",
+              marginTop: "4px",
+              zIndex: 10,
+              maxHeight: "200px",
+              overflowY: "auto",
+            }}
+          >
+            {availableTerminals.map((terminal) => (
+              <button
+                key={terminal}
+                className="icon-btn"
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  display: "block",
+                  background: selectedTerminal === terminal ? "var(--primary)" : "transparent",
+                  color: selectedTerminal === terminal ? "var(--on-primary)" : "var(--text)",
+                }}
+                onClick={() => handleTerminalSelect(terminal)}
+              >
+                {terminal === "auto" ? t("auto.detect") : terminal}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="sidebar-section-title">
-        <span>Connections</span>
+        <span>{t("sidebar.connections")}</span>
         <div>
-          <button className="icon-btn" title="Import connections" onClick={onImport}>
+          <button className="icon-btn" title={t("sidebar.import")} onClick={onImport}>
             <FileDownload fontSize="small" />
           </button>
           <button
             className="icon-btn"
-            title="Export connections"
+            title={t("sidebar.export")}
             onClick={onExport}
           >
             <FileUpload fontSize="small" />
           </button>
-          <button className="icon-btn" title="Manage keys" onClick={onManageKeys}>
+          <button className="icon-btn" title={t("sidebar.manageKeys")} onClick={onManageKeys}>
             <Key fontSize="small" />
           </button>
           <button
             className="icon-btn"
-            title="New connection"
+            title={t("sidebar.newConnection")}
             onClick={onNewConnection}
           >
             <Add fontSize="small" />
@@ -118,7 +208,7 @@ export default function Sidebar({
 
       <div className="connection-list">
         {connections.length === 0 && (
-          <p className="muted">No connections yet. Add one with “+”.</p>
+          <p className="muted">{t("sidebar.noConnections")}</p>
         )}
         {grouped.map(([groupName, items]) => (
           <div key={groupName} className="connection-group">
@@ -151,14 +241,14 @@ export default function Sidebar({
                 <div className="connection-actions">
                   <button
                     className="icon-btn"
-                    title="Edit"
+                    title={t("sidebar.edit")}
                     onClick={() => onEditConnection(c)}
                   >
                     <Edit fontSize="small" />
                   </button>
                   <button
                     className="icon-btn"
-                    title="Delete"
+                    title={t("sidebar.delete")}
                     onClick={() => onDeleteConnection(c)}
                   >
                     <Delete fontSize="small" />

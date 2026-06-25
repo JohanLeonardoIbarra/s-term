@@ -13,9 +13,10 @@ interface Props {
   connecting?: boolean;
   onExit: (sessionId: string) => void;
   onConnected?: (sessionId: string) => void;
+  terminalFontSize?: number;
 }
 
-export default function Terminal({ sessionId, active, connecting, onExit, onConnected }: Props) {
+export default function Terminal({ sessionId, active, connecting, onExit, onConnected, terminalFontSize = 14 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -29,7 +30,7 @@ export default function Terminal({ sessionId, active, connecting, onExit, onConn
       cursorStyle: 'block',
       fontFamily:
         'Menlo, Monaco, "Cascadia Code", "Fira Code", "Courier New", monospace',
-      fontSize: 14,
+      fontSize: terminalFontSize,
       theme: {
         background: "#000000",
         foreground: "#e5e2e1",
