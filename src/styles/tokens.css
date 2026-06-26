@@ -1,0 +1,80 @@
+:root {
+  /* Monolithic Terminal Color System - Dark Theme (Default) */
+  --surface: #131313;
+  --surface-dim: #131313;
+  --surface-bright: #393939;
+  --surface-container-lowest: #0e0e0e;
+  --surface-container-low: #1c1b1b;
+  --surface-container: #201f1f;
+  --surface-container-high: #2a2a2a;
+  --surface-container-highest: #353534;
+  --on-surface: #e5e2e1;
+  --on-surface-variant: #c4c7c8;
+  --inverse-surface: #e5e2e1;
+  --inverse-on-surface: #313030;
+  --outline: #8e9192;
+  --outline-variant: #444748;
+  --surface-tint: #c6c6c7;
+  --primary: #ffffff;
+  --on-primary: #2f3131;
+  --primary-container: #e2e2e2;
+  --on-primary-container: #636565;
+  --inverse-primary: #5d5f5f;
+  --secondary: #ecffe3;
+  --on-secondary: #003907;
+  --secondary-container: #13ff43;
+  --on-secondary-container: #007117;
+  --tertiary: #ffffff;
+  --on-tertiary: #002d6e;
+  --tertiary-container: #d9e2ff;
+  --on-tertiary-container: #005ed6;
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+  --primary-fixed: #e2e2e2;
+  --primary-fixed-dim: #c6c6c7;
+  --on-primary-fixed: #1a1c1c;
+  --on-primary-fixed-variant: #454747;
+  --secondary-fixed: #72ff70;
+  --secondary-fixed-dim: #00e639;
+  --on-secondary-fixed: #002203;
+  --on-secondary-fixed-variant: #00530e;
+  --tertiary-fixed: #d9e2ff;
+  --tertiary-fixed-dim: #b0c6ff;
+  --on-tertiary-fixed: #001945;
+  --on-tertiary-fixed-variant: #00429b;
+  --background: #131313;
+  --on-background: #e5e2e1;
+  --surface-variant: #353534;
+
+  /* Legacy aliases for gradual migration */
+  --bg: var(--background);
+  --bg-alt: var(--surface-container);
+  --panel: var(--surface-container-lowest);
+  --border: var(--outline-variant);
+  --text: var(--on-surface);
+  --muted: var(--on-surface-variant);
+  --accent: var(--primary);
+  --accent-strong: var(--secondary-container);
+  --danger: var(--error);
+
+  /* Logic Blue for focus states */
+  --logic-blue: #2979ff;
+  --border-slate: #333333;
+  --surface-base: #000000;
+  --surface-active: #1e1e1e;
+  --ui-font-size: 14px;
+
+  /* Typography Scale - proportional sizing based on base font size */
+  --font-scale-label-caps: 0.7;
+  --font-scale-body-sm: 0.85;
+  --font-scale-body-md: 1;
+  --font-scale-code-sm: 0.85;
+  --font-scale-code-md: 1;
+  --font-scale-headline-sm: 1.3;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  color-scheme: dark;
+}

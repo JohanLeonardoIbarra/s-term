@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import Sidebar from "./components/Sidebar";
-import TabBar from "./components/TabBar";
-import Terminal from "./components/Terminal";
-import UnlockVault from "./components/UnlockVault";
-import ConnectionForm from "./components/ConnectionForm";
-import KeyManager from "./components/KeyManager";
-import PasswordPrompt from "./components/PasswordPrompt";
-import ConfirmModal from "./components/ConfirmModal";
-import SettingsModal from "./components/SettingsModal";
+import Sidebar from "./components/organisms/Sidebar";
+import TabBar from "./components/organisms/TabBar";
+import Terminal from "./components/organisms/Terminal";
+import UnlockVault from "./components/organisms/UnlockVault";
+import ConnectionForm from "./components/organisms/ConnectionForm";
+import KeyManager from "./components/organisms/KeyManager";
+import PasswordPrompt from "./components/organisms/PasswordPrompt";
+import ConfirmModal from "./components/organisms/ConfirmModal";
+import SettingsModal from "./components/organisms/SettingsModal";
+import Toast from "./components/atoms/Toast";
+import styles from "./App.module.css";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
   connectSsh,
@@ -24,7 +26,7 @@ import {
 } from "./api";
 import { getSettings, saveSettings } from "./settings";
 import { useTranslation } from "./i18n";
-import type { ConnectionView, KeyView, Session, Settings } from "./types";
+import type { ConnectionView, KeyView, Session, Settings, TerminalInfo } from "./types";
 
 interface PromptState {
   title: string;
@@ -47,7 +49,7 @@ export default function App() {
   const [keys, setKeys] = useState<KeyView[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [availableTerminals, setAvailableTerminals] = useState<string[]>([]);
+  const [availableTerminals, setAvailableTerminals] = useState<TerminalInfo[]>([]);
 
   const [showConnForm, setShowConnForm] = useState(false);
   const [editing, setEditing] = useState<ConnectionView | null>(null);
@@ -104,15 +106,21 @@ export default function App() {
     setActiveId(session.id);
   }
 
-  function handleConnected(sessionId: string) {
+  const handleConnected = useCallback((sessionId: string) => {
     setSessions((prev) =>
       prev.map((s) => (s.id === sessionId ? { ...s, connecting: false } : s))
     );
-  }
+  }, []);
+
+  const handleExit = useCallback((_sessionId: string) => {
+    /* keep tab so the user can read final output */
+  }, []);
 
   async function handleNewLocal(terminal?: string) {
+    const picked = typeof terminal === "string" ? terminal : undefined;
+    const terminalToUse =
+      picked ?? (settings.defaultTerminal === "auto" ? undefined : settings.defaultTerminal);
     try {
-      const terminalToUse = terminal || (settings.defaultTerminal === "auto" ? undefined : settings.defaultTerminal);
       const id = await createLocalSession(80, 24, terminalToUse);
       addSession({ id, title: "Local", kind: "local" });
     } catch (err) {
@@ -231,7 +239,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       <Sidebar
         connections={connections}
         onConnect={handleConnect}
@@ -254,16 +262,16 @@ export default function App() {
         defaultTerminal={settings.defaultTerminal}
       />
 
-      <main className="workspace">
+      <main className={styles.workspace}>
         <TabBar
           sessions={sessions}
           activeId={activeId}
           onSelect={setActiveId}
           onClose={handleCloseSession}
         />
-        <div className="terminal-area">
+        <div className={styles.terminalArea}>
           {sessions.length === 0 && (
-            <div className="empty-state">
+            <div className={styles.emptyState}>
               <h2>{t("app.noSessions")}</h2>
               <p>
                 {t("app.openHint")}
@@ -276,9 +284,7 @@ export default function App() {
               sessionId={s.id}
               active={s.id === activeId}
               connecting={s.connecting}
-              onExit={() => {
-                /* keep tab so the user can read final output */
-              }}
+              onExit={handleExit}
               onConnected={handleConnected}
               terminalFontSize={settings.terminalFontSize}
             />
@@ -346,15 +352,15 @@ export default function App() {
       )}
 
       {error && (
-        <div className="toast" onClick={() => setError(null)}>
+        <Toast variant="error" onClick={() => setError(null)}>
           {error}
-        </div>
+        </Toast>
       )}
 
       {notice && (
-        <div className="toast notice" onClick={() => setNotice(null)}>
+        <Toast variant="notice" onClick={() => setNotice(null)}>
           {notice}
-        </div>
+        </Toast>
       )}
     </div>
   );

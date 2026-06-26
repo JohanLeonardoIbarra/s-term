@@ -1,0 +1,53 @@
+/* ---- Typography Scale ---------------------------------------------------- */
+
+.headline-sm {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-headline-sm));
+  font-weight: 600;
+  line-height: calc(var(--ui-font-size) * 1.7);
+  letter-spacing: -0.01em;
+}
+
+.body-md {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-body-md));
+  font-weight: 400;
+  line-height: calc(var(--ui-font-size) * 1.4);
+  letter-spacing: 0em;
+}
+
+.body-sm {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-body-sm));
+  font-weight: 400;
+  line-height: calc(var(--ui-font-size) * 1.15);
+  letter-spacing: 0em;
+}
+
+.code-md {
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-code-md));
+  font-weight: 500;
+  line-height: calc(var(--ui-font-size) * 1.4);
+  letter-spacing: -0.02em;
+}
+
+.code-sm {
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-code-sm));
+  font-weight: 400;
+  line-height: calc(var(--ui-font-size) * 1.15);
+  letter-spacing: -0.02em;
+}
+
+.label-caps {
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-label-caps));
+  font-weight: 700;
+  line-height: calc(var(--ui-font-size) * 0.85);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}

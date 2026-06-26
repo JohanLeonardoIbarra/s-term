@@ -4,7 +4,7 @@ import App from "./App";
 import { I18nProvider } from "./i18n";
 import { getSettings } from "./settings";
 import "@xterm/xterm/css/xterm.css";
-import "./styles.css";
+import "./styles/index.css";
 
 const settings = getSettings();
 

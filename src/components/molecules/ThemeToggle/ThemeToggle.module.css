@@ -1,0 +1,28 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border-slate);
+  padding: 4px;
+  gap: 4px;
+}
+
+.option {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  color: var(--on-surface-variant);
+}
+
+.active {
+  background: var(--surface-active);
+  color: var(--primary);
+  border: 1px solid var(--logic-blue);
+}
+
+.check {
+  position: absolute;
+  right: 8px;
+}

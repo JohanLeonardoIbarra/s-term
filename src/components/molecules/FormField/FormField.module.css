@@ -1,0 +1,13 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: calc(var(--ui-font-size) * 0.85);
+  color: var(--muted);
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

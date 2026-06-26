@@ -1,5 +1,10 @@
 export type AuthMethod = "key" | "password" | "agent";
 
+export interface TerminalInfo {
+  id: string;
+  label: string;
+}
+
 export interface Settings {
   theme: "dark" | "light";
   language: string;
