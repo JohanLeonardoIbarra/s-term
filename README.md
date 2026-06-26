@@ -108,3 +108,7 @@ Bundles are written to `src-tauri/target/release/bundle/`.
 - SSH authentication uses in-memory key material (`userauth_pubkey_memory`), so
   decrypted keys are never written to temporary files.
 - The local `vault.dat` is git-ignored and must never be committed.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
