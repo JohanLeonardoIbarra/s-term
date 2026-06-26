@@ -1,5 +1,18 @@
 export type AuthMethod = "key" | "password" | "agent";
 
+export interface TerminalInfo {
+  id: string;
+  label: string;
+}
+
+export interface Settings {
+  theme: "dark" | "light";
+  language: string;
+  uiFontSize: number;
+  terminalFontSize: number;
+  defaultTerminal: string;
+}
+
 export interface ConnectionView {
   id: string;
   name: string;
@@ -43,6 +56,7 @@ export interface Session {
   title: string;
   kind: SessionKind;
   connectionId?: string;
+  connecting?: boolean;
 }
 
 /** Payload of the `pty://data` event. */

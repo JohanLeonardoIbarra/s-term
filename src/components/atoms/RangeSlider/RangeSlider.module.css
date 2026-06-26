@@ -1,0 +1,11 @@
+.slider {
+  flex: 1;
+  width: 100%;
+  accent-color: var(--primary);
+  padding: 0;
+  border: none;
+}
+
+.slider:focus {
+  outline: none;
+}

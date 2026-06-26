@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useState } from "react";
-import Sidebar from "./components/Sidebar";
-import TabBar from "./components/TabBar";
-import Terminal from "./components/Terminal";
-import UnlockVault from "./components/UnlockVault";
-import ConnectionForm from "./components/ConnectionForm";
-import KeyManager from "./components/KeyManager";
-import PasswordPrompt from "./components/PasswordPrompt";
+import Sidebar from "./components/organisms/Sidebar";
+import TabBar from "./components/organisms/TabBar";
+import Terminal from "./components/organisms/Terminal";
+import UnlockVault from "./components/organisms/UnlockVault";
+import ConnectionForm from "./components/organisms/ConnectionForm";
+import KeyManager from "./components/organisms/KeyManager";
+import PasswordPrompt from "./components/organisms/PasswordPrompt";
+import ConfirmModal from "./components/organisms/ConfirmModal";
+import SettingsModal from "./components/organisms/SettingsModal";
+import Toast from "./components/atoms/Toast";
+import styles from "./App.module.css";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
   connectSsh,
   createLocalSession,
   deleteConnection,
+  deleteKey,
   exportConnections,
   importConnections,
   listConnections,
   listKeys,
+  listTerminals,
   lockVault,
   vaultIsUnlocked,
 } from "./api";
-import type { ConnectionView, KeyView, Session } from "./types";
+import { getSettings, saveSettings } from "./settings";
+import { useTranslation } from "./i18n";
+import type { ConnectionView, KeyView, Session, Settings, TerminalInfo } from "./types";
 
 interface PromptState {
   title: string;
@@ -28,22 +36,59 @@ interface PromptState {
   onSubmit: (password: string) => Promise<void>;
 }
 
+interface ConfirmState {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+}
+
 export default function App() {
+  const { t } = useTranslation();
   const [unlocked, setUnlocked] = useState(false);
   const [connections, setConnections] = useState<ConnectionView[]>([]);
   const [keys, setKeys] = useState<KeyView[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [availableTerminals, setAvailableTerminals] = useState<TerminalInfo[]>([]);
 
   const [showConnForm, setShowConnForm] = useState(false);
   const [editing, setEditing] = useState<ConnectionView | null>(null);
   const [showKeys, setShowKeys] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<PromptState | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [settings, setSettings] = useState<Settings>(getSettings());
+
+  const handleSaveSettings = (newSettings: Settings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+    setShowSettings(false);
+  };
+
+  // Apply theme to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === "light") {
+      root.setAttribute("data-theme", "light");
+    } else {
+      root.removeAttribute("data-theme");
+    }
+  }, [settings.theme]);
+
+  // Apply UI font size to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--ui-font-size", `${settings.uiFontSize}px`);
+  }, [settings.uiFontSize]);
 
   useEffect(() => {
     vaultIsUnlocked().then(setUnlocked).catch(() => setUnlocked(false));
+  }, []);
+
+  useEffect(() => {
+    listTerminals().then(setAvailableTerminals).catch(console.error);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -61,9 +106,22 @@ export default function App() {
     setActiveId(session.id);
   }
 
-  async function handleNewLocal() {
+  const handleConnected = useCallback((sessionId: string) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, connecting: false } : s))
+    );
+  }, []);
+
+  const handleExit = useCallback((_sessionId: string) => {
+    /* keep tab so the user can read final output */
+  }, []);
+
+  async function handleNewLocal(terminal?: string) {
+    const picked = typeof terminal === "string" ? terminal : undefined;
+    const terminalToUse =
+      picked ?? (settings.defaultTerminal === "auto" ? undefined : settings.defaultTerminal);
     try {
-      const id = await createLocalSession(80, 24);
+      const id = await createLocalSession(80, 24, terminalToUse);
       addSession({ id, title: "Local", kind: "local" });
     } catch (err) {
       setError(String(err));
@@ -71,10 +129,22 @@ export default function App() {
   }
 
   async function handleConnect(c: ConnectionView) {
+    // Generate temporary ID for immediate loading state
+    const tempId = `temp-${Date.now()}`;
+    // Add session immediately to show loading animation
+    addSession({ id: tempId, title: c.name, kind: "ssh", connectionId: c.id, connecting: true });
+
     try {
-      const id = await connectSsh(c.id, 80, 24);
-      addSession({ id, title: c.name, kind: "ssh", connectionId: c.id });
+      const realId = await connectSsh(c.id, 80, 24);
+      // Update session with real ID after connection succeeds
+      setSessions((prev) =>
+        prev.map((s) => (s.id === tempId ? { ...s, id: realId } : s))
+      );
+      // Update activeId to the new real ID
+      setActiveId(realId);
     } catch (err) {
+      // Remove session if connection fails
+      handleCloseSession(tempId);
       setError(String(err));
     }
   }
@@ -89,9 +159,16 @@ export default function App() {
     });
   }
 
-  async function handleDeleteConnection(c: ConnectionView) {
-    await deleteConnection(c.id);
-    void refresh();
+  function handleDeleteConnection(c: ConnectionView) {
+    setConfirm({
+      title: t("app.deleteConnTitle"),
+      message: t("app.deleteConnMsg", { name: c.name }),
+      onConfirm: async () => {
+        await deleteConnection(c.id);
+        setConfirm(null);
+        void refresh();
+      },
+    });
   }
 
   async function handleLock() {
@@ -105,7 +182,7 @@ export default function App() {
     let path: string | null;
     try {
       path = await save({
-        title: "Export connections",
+        title: t("app.exportTitle"),
         defaultPath: "s-term-connections.stbk",
         filters: [{ name: "s-term backup", extensions: ["stbk"] }],
       });
@@ -116,15 +193,14 @@ export default function App() {
     if (!path) return;
     const target = path;
     setPrompt({
-      title: "Encrypt backup",
-      description:
-        "Choose a password to encrypt the exported connections and keys.",
+      title: t("app.encryptTitle"),
+      description: t("app.encryptDesc"),
       confirm: true,
-      submitLabel: "Export",
+      submitLabel: t("app.exportLabel"),
       onSubmit: async (password) => {
         await exportConnections(target, password);
         setPrompt(null);
-        setNotice("Connections exported.");
+        setNotice(t("app.exported"));
       },
     });
   }
@@ -133,7 +209,7 @@ export default function App() {
     let selected: string | string[] | null;
     try {
       selected = await open({
-        title: "Import connections",
+        title: t("app.importTitle"),
         multiple: false,
         directory: false,
         filters: [{ name: "s-term backup", extensions: ["stbk"] }],
@@ -145,15 +221,15 @@ export default function App() {
     if (typeof selected !== "string") return;
     const source = selected;
     setPrompt({
-      title: "Import backup",
-      description: "Enter the password used to encrypt this backup.",
+      title: t("app.importBackupTitle"),
+      description: t("app.importDesc"),
       confirm: false,
-      submitLabel: "Import",
+      submitLabel: t("app.importLabel"),
       onSubmit: async (password) => {
         const count = await importConnections(source, password);
         setPrompt(null);
         await refresh();
-        setNotice(`Imported ${count} connection${count === 1 ? "" : "s"}.`);
+        setNotice(t("app.imported", { count }));
       },
     });
   }
@@ -163,7 +239,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       <Sidebar
         connections={connections}
         onConnect={handleConnect}
@@ -181,22 +257,24 @@ export default function App() {
         onExport={handleExport}
         onImport={handleImport}
         onLock={handleLock}
+        onOpenSettings={() => setShowSettings(true)}
+        availableTerminals={availableTerminals}
+        defaultTerminal={settings.defaultTerminal}
       />
 
-      <main className="workspace">
+      <main className={styles.workspace}>
         <TabBar
           sessions={sessions}
           activeId={activeId}
           onSelect={setActiveId}
           onClose={handleCloseSession}
         />
-        <div className="terminal-area">
+        <div className={styles.terminalArea}>
           {sessions.length === 0 && (
-            <div className="empty-state">
-              <h2>No active sessions</h2>
+            <div className={styles.emptyState}>
+              <h2>{t("app.noSessions")}</h2>
               <p>
-                Open a local terminal or connect to a saved SSH host from the
-                sidebar.
+                {t("app.openHint")}
               </p>
             </div>
           )}
@@ -205,9 +283,10 @@ export default function App() {
               key={s.id}
               sessionId={s.id}
               active={s.id === activeId}
-              onExit={() => {
-                /* keep tab so the user can read final output */
-              }}
+              connecting={s.connecting}
+              onExit={handleExit}
+              onConnected={handleConnected}
+              terminalFontSize={settings.terminalFontSize}
             />
           ))}
         </div>
@@ -230,6 +309,17 @@ export default function App() {
           keys={keys}
           onChange={() => void refresh()}
           onClose={() => setShowKeys(false)}
+          onDeleteKey={(id, name) => {
+            setConfirm({
+              title: "Delete SSH key",
+              message: `Are you sure you want to delete "${name}"?`,
+              onConfirm: async () => {
+                await deleteKey(id);
+                setConfirm(null);
+                void refresh();
+              },
+            });
+          }}
         />
       )}
 
@@ -244,16 +334,33 @@ export default function App() {
         />
       )}
 
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          onSave={handleSaveSettings}
+          onCancel={() => setShowSettings(false)}
+        />
+      )}
+
       {error && (
-        <div className="toast" onClick={() => setError(null)}>
+        <Toast variant="error" onClick={() => setError(null)}>
           {error}
-        </div>
+        </Toast>
       )}
 
       {notice && (
-        <div className="toast notice" onClick={() => setNotice(null)}>
+        <Toast variant="notice" onClick={() => setNotice(null)}>
           {notice}
-        </div>
+        </Toast>
       )}
     </div>
   );

@@ -27,6 +27,8 @@ base64 = "0.22"
 uuid = { version = "1", features = ["v4"] }
 zeroize = "1"
 thiserror = "1"
+which = "6"
+tokio = { version = "1", features = ["sync", "time"] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified,

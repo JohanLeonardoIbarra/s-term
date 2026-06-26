@@ -1,0 +1,19 @@
+.iconBtn {
+  padding: 4px 6px;
+  border-radius: 0;
+  color: var(--muted);
+  font-size: calc(var(--ui-font-size) * 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

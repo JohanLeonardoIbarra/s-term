@@ -1,0 +1,9 @@
+.label {
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-label-caps));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+}

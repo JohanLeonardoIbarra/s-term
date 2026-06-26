@@ -1,0 +1,23 @@
+.wrapper {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border-slate);
+  color: var(--on-surface);
+  padding: 12px 8px;
+  appearance: none;
+  cursor: pointer;
+  font-family: "Fira Code", "Cascadia Code", monospace;
+  font-size: calc(var(--ui-font-size) * var(--font-scale-code-md));
+}
+
+.chevron {
+  position: absolute;
+  right: 8px;
+  top: 12px;
+  pointer-events: none;
+  color: var(--on-surface-variant);
+}

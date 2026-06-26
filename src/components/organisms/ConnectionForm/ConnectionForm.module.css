@@ -1,0 +1,15 @@
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: calc(var(--ui-font-size) * 0.85);
+}

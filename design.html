@@ -1,0 +1,262 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>S-Term | System Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#e5e2e1",
+                        "surface-bright": "#3a3939",
+                        "secondary-fixed": "#d5e8cd",
+                        "inverse-on-surface": "#313030",
+                        "logic-blue": "#2979FF",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary-fixed": "#1a1c1c",
+                        "text-variant": "#c4c7c8",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#e2e2e2",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#3b4b37",
+                        "on-surface-variant": "#c4c7c8",
+                        "on-primary-container": "#636565",
+                        "surface-base": "#000000",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed-dim": "#b9ccb2",
+                        "on-secondary": "#253422",
+                        "on-primary-fixed-variant": "#454747",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "surface-container-high": "#2a2a2a",
+                        "primary-fixed-dim": "#c6c6c7",
+                        "on-tertiary": "#2f3131",
+                        "primary": "#ffffff",
+                        "primary-container": "#e2e2e2",
+                        "error": "#ffb4ab",
+                        "border-slate": "#333333",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary-container": "#a8baa1",
+                        "on-tertiary-container": "#636565",
+                        "on-error": "#690005",
+                        "primary-fixed": "#e2e2e2",
+                        "secondary-container": "#3b4b37",
+                        "tertiary": "#ffffff",
+                        "on-secondary-fixed": "#101f0e",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-active": "#1e1e1e",
+                        "surface-dim": "#141313",
+                        "surface-elevated": "#121212",
+                        "surface-container-highest": "#353434",
+                        "surface-variant": "#353434",
+                        "outline": "#8e9192",
+                        "surface": "#141313",
+                        "background": "#141313",
+                        "secondary": "#b9ccb2",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary": "#2f3131",
+                        "outline-variant": "#444748",
+                        "surface-tint": "#c6c6c7",
+                        "surface-container": "#201f1f",
+                        "inverse-primary": "#5d5f5f",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "inverse-surface": "#e5e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "stack-default": "12px",
+                        "margin-mobile": "12px",
+                        "baseline": "4px",
+                        "sidebar-width-desktop": "300px",
+                        "gutter": "8px",
+                        "stack-compact": "4px",
+                        "margin-desktop": "24px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "400"}],
+                        "label-caps": ["10px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "code-md": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 18px;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #333333; }
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #00FF41;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            background: #333333;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            background: #ffffff;
+            margin-top: -5px;
+            border-radius: 0;
+        }
+    </style>
+</head>
+<body class="text-on-surface font-body-md text-body-md min-h-screen selection:bg-logic-blue selection:text-white bg-surface-container-lowest">
+<!-- Top AppBar Component -->
+
+<!-- Side Navigation Bar Component -->
+
+<!-- Main Content Canvas (Terminal Mockup) -->
+<main class="min-h-screen relative flex items-center justify-center overflow-hidden">
+<!-- Terminal Background Aesthetic -->
+
+<!-- SETTINGS MODAL -->
+<div class="relative z-10 w-full max-w-2xl mx-margin-mobile bg-surface-container border border-border-slate shadow-2xl flex flex-col" id="settings-modal">
+<!-- Modal Header -->
+<div class="p-margin-desktop border-b border-border-slate flex justify-between items-center bg-surface-container-high">
+<div class="flex items-center gap-stack-default">
+<span class="material-symbols-outlined text-primary">settings</span>
+<h1 class="font-label-caps text-label-caps text-primary tracking-widest">SETTINGS_CONFIG</h1>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">close</button>
+</div>
+<!-- Modal Body -->
+<div class="p-margin-desktop space-y-8 max-h-[70vh] overflow-y-auto">
+<!-- Section: THEME_PREFERENCE -->
+<section class="space-y-stack-default">
+<label class="font-label-caps text-label-caps text-on-surface-variant opacity-60">THEME_PREFERENCE</label>
+<div class="grid grid-cols-2 border border-border-slate p-1 gap-1">
+<button class="py-2 bg-surface-active text-primary border border-logic-blue font-code-md text-code-md flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">dark_mode</span>
+                            OSCURO
+                        </button>
+<button class="py-2 hover:bg-surface-container-highest text-on-surface-variant font-code-md text-code-md flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">light_mode</span>
+                            CLARO
+                        </button>
+</div>
+</section>
+<!-- Section: LOCALIZATION -->
+<section class="space-y-stack-default">
+<label class="font-label-caps text-label-caps text-on-surface-variant opacity-60">LOCALIZATION</label>
+<div class="relative group">
+<select class="w-full bg-surface-base border-b border-border-slate text-on-surface font-code-md text-code-md py-3 px-2 appearance-none focus:outline-none focus:border-primary cursor-pointer transition-colors">
+<option value="en">English (US)</option>
+<option selected="" value="es">Español (ES)</option>
+<option value="de">Deutsch (DE)</option>
+<option value="jp">日本語 (JP)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</section>
+<!-- Dual Font Sliders -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Section: UI_FONT_SIZE -->
+<section class="space-y-stack-default">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant opacity-60">UI_FONT_SIZE</label>
+<span class="font-code-sm text-code-sm text-primary">14px</span>
+</div>
+<div class="flex items-center gap-stack-default py-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">A</span>
+<input class="flex-1 accent-primary" max="24" min="10" type="range" value="14">
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">A</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[10px] italic">Propuesta de renderizado para Inter UI.</p>
+</section>
+<!-- Section: TERMINAL_FONT_SIZE -->
+<section class="space-y-stack-default">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant opacity-60">TERMINAL_FONT_SIZE</label>
+<span class="font-code-sm text-code-sm text-primary">12px</span>
+</div>
+<div class="flex items-center border border-border-slate overflow-hidden">
+<button class="p-2 px-4 hover:bg-surface-active text-primary transition-colors border-r border-border-slate">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<div class="flex-1 text-center font-code-md text-code-md py-2">12px</div>
+<button class="p-2 px-4 hover:bg-surface-active text-primary transition-colors border-l border-border-slate">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<p class="font-code-sm text-code-sm text-on-surface-variant text-[10px] italic opacity-50">Preview: mono_font_rendering_test_01</p>
+</section>
+</div>
+<!-- Advanced Options Link -->
+<div class="pt-4 flex items-center gap-2 cursor-pointer group">
+<span class="material-symbols-outlined text-logic-blue text-sm">settings_ethernet</span>
+<span class="font-label-caps text-label-caps text-logic-blue group-hover:underline">OPEN_CONFIG_JSON</span>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-margin-desktop border-t border-border-slate flex flex-col md:flex-row justify-end gap-stack-default bg-surface-container-lowest">
+<button class="px-6 py-2 border border-border-slate font-label-caps text-label-caps text-on-surface-variant hover:text-primary hover:border-primary transition-all order-2 md:order-1">
+                    DISCARD
+                </button>
+<button class="px-6 py-2 bg-primary text-surface-base font-label-caps text-label-caps font-bold hover:bg-on-surface-variant transition-all order-1 md:order-2">
+                    SAVE_CHANGES
+                </button>
+</div>
+</div>
+<!-- Decorative Elements -->
+
+</main>
+<script>
+        // Simple micro-interaction for the close/discard actions
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if(this.innerText.includes('DISCARD') || this.innerText.includes('close')) {
+                    const modal = document.getElementById('settings-modal');
+                    modal.style.opacity = '0.5';
+                    modal.style.filter = 'grayscale(1)';
+                    setTimeout(() => {
+                        modal.style.opacity = '1';
+                        modal.style.filter = 'none';
+                    }, 300);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

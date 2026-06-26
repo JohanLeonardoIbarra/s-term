@@ -1,11 +1,15 @@
-# s-term
+# S-Term
 
-A cross-platform terminal application with multi-session management and an
-**encrypted SSH connection directory**, built with **Tauri (Rust)** and
-**React + TypeScript**.
+<p align="center">
+  <img src="docs/app-screenshot.png" alt="S-Term screenshot" width="800" />
+</p>
 
-The terminal is fully integrated into the app (no external terminal emulator
-required) and the project compiles to **Windows 11, Linux and macOS**.
+[![Latest Release](https://img.shields.io/github/v/release/JohanLeonardoIbarra/s-term)](https://github.com/JohanLeonardoIbarra/s-term/releases/latest)
+[![License](https://img.shields.io/github/license/JohanLeonardoIbarra/s-term)](LICENSE)
+
+A modern, cross-platform terminal application with multi-session management and an **encrypted SSH connection directory**. Built with **Tauri (Rust)** and **React + TypeScript**, featuring a clean UI designed with Atomic Design principles.
+
+[Download the latest release](https://github.com/JohanLeonardoIbarra/s-term/releases/latest) for Windows, Linux, or macOS.
 
 ## Features
 

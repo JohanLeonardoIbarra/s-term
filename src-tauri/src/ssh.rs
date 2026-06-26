@@ -4,6 +4,7 @@ use std::sync::mpsc::{self, Sender, TryRecvError};
 
 use ssh2::Session;
 use tauri::AppHandle;
+use tokio::sync::oneshot;
 
 use crate::error::{Error, Result};
 use crate::session::{emit_exit, emit_output, SessionBackend};
@@ -15,13 +16,95 @@ enum Cmd {
     Close,
 }
 
+enum ConnectResult {
+    Success(Session, ssh2::Channel),
+    Error(Error),
+}
+
+fn connect_in_thread(conn: Connection, key: Option<SshKey>, cols: u16, rows: u16) -> ConnectResult {
+    // Connect + authenticate in a separate thread
+    let tcp = match TcpStream::connect((conn.host.as_str(), conn.port)) {
+        Ok(t) => t,
+        Err(e) => return ConnectResult::Error(Error::Ssh(format!("connect failed: {e}"))),
+    };
+
+    let mut sess = match Session::new() {
+        Ok(s) => s,
+        Err(e) => return ConnectResult::Error(Error::Ssh(format!("session creation failed: {e}"))),
+    };
+
+    sess.set_tcp_stream(tcp);
+
+    if let Err(e) = sess.handshake() {
+        return ConnectResult::Error(Error::Ssh(format!("handshake failed: {e}")));
+    }
+
+    let auth_result = match conn.auth_method {
+        AuthMethod::Password => {
+            let pw = match conn.password {
+                Some(p) => p,
+                None => {
+                    return ConnectResult::Error(Error::Ssh(
+                        "no password stored for connection".into(),
+                    ))
+                }
+            };
+            sess.userauth_password(&conn.username, &pw)
+        }
+        AuthMethod::Key => {
+            let key = match key {
+                Some(k) => k,
+                None => {
+                    return ConnectResult::Error(Error::Ssh(
+                        "no key associated with connection".into(),
+                    ))
+                }
+            };
+            sess.userauth_pubkey_memory(
+                &conn.username,
+                None,
+                &key.private_key,
+                key.passphrase.as_deref(),
+            )
+        }
+        AuthMethod::Agent => sess.userauth_agent(&conn.username),
+    };
+
+    if let Err(e) = auth_result {
+        return ConnectResult::Error(Error::Ssh(format!("authentication failed: {e}")));
+    }
+
+    if !sess.authenticated() {
+        return ConnectResult::Error(Error::Ssh("authentication failed".into()));
+    }
+
+    let mut channel = match sess.channel_session() {
+        Ok(c) => c,
+        Err(e) => return ConnectResult::Error(Error::Ssh(format!("channel_session failed: {e}"))),
+    };
+
+    if let Err(e) = channel.request_pty(
+        "xterm-256color",
+        None,
+        Some((cols as u32, rows as u32, 0, 0)),
+    ) {
+        return ConnectResult::Error(Error::Ssh(format!("request_pty failed: {e}")));
+    }
+
+    if let Err(e) = channel.shell() {
+        return ConnectResult::Error(Error::Ssh(format!("shell failed: {e}")));
+    }
+
+    ConnectResult::Success(sess, channel)
+}
+
 /// An interactive SSH session backed by libssh2.
 pub struct SshSession {
     tx: Sender<Cmd>,
 }
 
 impl SshSession {
-    pub fn connect(
+    pub async fn connect(
         app: AppHandle,
         id: String,
         conn: Connection,
@@ -29,48 +112,23 @@ impl SshSession {
         cols: u16,
         rows: u16,
     ) -> Result<Self> {
-        // Connect + authenticate synchronously so errors reach the UI immediately.
-        let tcp = TcpStream::connect((conn.host.as_str(), conn.port))
-            .map_err(|e| Error::Ssh(format!("connect failed: {e}")))?;
+        let (tx, rx) = oneshot::channel::<ConnectResult>();
 
-        let mut sess = Session::new()?;
-        sess.set_tcp_stream(tcp);
-        sess.handshake()?;
+        std::thread::spawn(move || {
+            let result = connect_in_thread(conn, key, cols, rows);
+            let _ = tx.send(result);
+        });
 
-        match conn.auth_method {
-            AuthMethod::Password => {
-                let pw = conn
-                    .password
-                    .clone()
-                    .ok_or_else(|| Error::Ssh("no password stored for connection".into()))?;
-                sess.userauth_password(&conn.username, &pw)?;
-            }
-            AuthMethod::Key => {
-                let key =
-                    key.ok_or_else(|| Error::Ssh("no key associated with connection".into()))?;
-                sess.userauth_pubkey_memory(
-                    &conn.username,
-                    None,
-                    &key.private_key,
-                    key.passphrase.as_deref(),
-                )?;
-            }
-            AuthMethod::Agent => {
-                sess.userauth_agent(&conn.username)?;
-            }
-        }
+        // Wait for result with 30 second timeout (async)
+        let result = tokio::time::timeout(std::time::Duration::from_secs(30), rx)
+            .await
+            .map_err(|_| Error::Ssh("connection timeout".into()))?
+            .map_err(|_| Error::Ssh("connection thread failed".into()))?;
 
-        if !sess.authenticated() {
-            return Err(Error::Ssh("authentication failed".into()));
-        }
-
-        let mut channel = sess.channel_session()?;
-        channel.request_pty(
-            "xterm-256color",
-            None,
-            Some((cols as u32, rows as u32, 0, 0)),
-        )?;
-        channel.shell()?;
+        let (sess, mut channel) = match result {
+            ConnectResult::Success(s, c) => (s, c),
+            ConnectResult::Error(e) => return Err(e),
+        };
 
         // Blocking mode: libssh2 drains incoming flow internally, eliminating the
         // spurious EAGAIN-as-error failures that closed the session under load.

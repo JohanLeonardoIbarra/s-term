@@ -8,7 +8,7 @@ use tauri::{AppHandle, Manager, State};
 use uuid::Uuid;
 
 use error::{Error, Result};
-use pty::LocalPty;
+use pty::{detect_terminals, LocalPty, TerminalInfo};
 use session::SessionManager;
 use ssh::SshSession;
 use vault::{ConnectionInput, ConnectionView, KeyInput, KeyView, Vault};
@@ -105,20 +105,26 @@ fn import_connections(path: String, password: String, vault: State<'_, Vault>) -
 // ---- Session commands -----------------------------------------------------
 
 #[tauri::command]
+fn list_terminals() -> Vec<TerminalInfo> {
+    detect_terminals()
+}
+
+#[tauri::command]
 fn create_local_session(
     app: AppHandle,
     manager: State<'_, SessionManager>,
     cols: u16,
     rows: u16,
+    terminal: Option<String>,
 ) -> Result<String> {
     let id = Uuid::new_v4().to_string();
-    let pty = LocalPty::spawn(app, id.clone(), cols, rows)?;
+    let pty = LocalPty::spawn(app, id.clone(), cols, rows, terminal)?;
     manager.insert(id.clone(), Box::new(pty));
     Ok(id)
 }
 
 #[tauri::command]
-fn connect_ssh(
+async fn connect_ssh(
     app: AppHandle,
     vault: State<'_, Vault>,
     manager: State<'_, SessionManager>,
@@ -132,7 +138,7 @@ fn connect_ssh(
         None => None,
     };
     let id = Uuid::new_v4().to_string();
-    let session = SshSession::connect(app, id.clone(), conn, key, cols, rows)?;
+    let session = SshSession::connect(app, id.clone(), conn, key, cols, rows).await?;
     manager.insert(id.clone(), Box::new(session));
     Ok(id)
 }
@@ -184,6 +190,7 @@ pub fn run() {
             read_key_file,
             export_connections,
             import_connections,
+            list_terminals,
             create_local_session,
             connect_ssh,
             write_session,

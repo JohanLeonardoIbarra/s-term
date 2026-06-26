@@ -5,7 +5,7 @@
   "identifier": "com.johanibarra.sterm",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1425",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
@@ -14,9 +14,9 @@
       {
         "title": "s-term",
         "width": 1100,
-        "height": 720,
-        "minWidth": 720,
-        "minHeight": 480
+        "height": 740,
+        "minWidth": 1000,
+        "minHeight": 740
       }
     ],
     "security": {

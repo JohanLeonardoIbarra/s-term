@@ -1,0 +1,59 @@
+.row {
+  display: flex;
+  align-items: stretch;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+}
+
+.row:hover {
+  border-color: var(--accent);
+}
+
+.main {
+  flex: 1;
+  text-align: left;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.1s, background-color 0.1s;
+  position: relative;
+  align-items: flex-start;
+}
+
+.main:active {
+  transform: scale(0.98);
+  background-color: var(--bg);
+}
+
+.main:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.sub {
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.row:hover .actions {
+  opacity: 1;
+}
+
+.main :global(.spinner) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}

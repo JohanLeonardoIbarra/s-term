@@ -4,6 +4,7 @@ import type {
   ConnectionView,
   KeyInput,
   KeyView,
+  TerminalInfo,
 } from "./types";
 
 // ---- Vault ----------------------------------------------------------------
@@ -88,11 +89,16 @@ export function importConnections(
 
 // ---- Sessions -------------------------------------------------------------
 
+export function listTerminals(): Promise<TerminalInfo[]> {
+  return invoke("list_terminals");
+}
+
 export function createLocalSession(
   cols: number,
-  rows: number
+  rows: number,
+  terminal?: string
 ): Promise<string> {
-  return invoke("create_local_session", { cols, rows });
+  return invoke("create_local_session", { cols, rows, terminal });
 }
 
 export function connectSsh(
