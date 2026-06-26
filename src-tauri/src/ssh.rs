@@ -21,12 +21,7 @@ enum ConnectResult {
     Error(Error),
 }
 
-fn connect_in_thread(
-    conn: Connection,
-    key: Option<SshKey>,
-    cols: u16,
-    rows: u16,
-) -> ConnectResult {
+fn connect_in_thread(conn: Connection, key: Option<SshKey>, cols: u16, rows: u16) -> ConnectResult {
     // Connect + authenticate in a separate thread
     let tcp = match TcpStream::connect((conn.host.as_str(), conn.port)) {
         Ok(t) => t,
@@ -48,14 +43,22 @@ fn connect_in_thread(
         AuthMethod::Password => {
             let pw = match conn.password {
                 Some(p) => p,
-                None => return ConnectResult::Error(Error::Ssh("no password stored for connection".into())),
+                None => {
+                    return ConnectResult::Error(Error::Ssh(
+                        "no password stored for connection".into(),
+                    ))
+                }
             };
             sess.userauth_password(&conn.username, &pw)
         }
         AuthMethod::Key => {
             let key = match key {
                 Some(k) => k,
-                None => return ConnectResult::Error(Error::Ssh("no key associated with connection".into())),
+                None => {
+                    return ConnectResult::Error(Error::Ssh(
+                        "no key associated with connection".into(),
+                    ))
+                }
             };
             sess.userauth_pubkey_memory(
                 &conn.username,
@@ -117,13 +120,10 @@ impl SshSession {
         });
 
         // Wait for result with 30 second timeout (async)
-        let result = tokio::time::timeout(
-            std::time::Duration::from_secs(30),
-            rx
-        )
-        .await
-        .map_err(|_| Error::Ssh("connection timeout".into()))?
-        .map_err(|_| Error::Ssh("connection thread failed".into()))?;
+        let result = tokio::time::timeout(std::time::Duration::from_secs(30), rx)
+            .await
+            .map_err(|_| Error::Ssh("connection timeout".into()))?
+            .map_err(|_| Error::Ssh("connection thread failed".into()))?;
 
         let (sess, mut channel) = match result {
             ConnectResult::Success(s, c) => (s, c),

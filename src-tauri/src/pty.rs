@@ -22,7 +22,13 @@ pub struct LocalPty {
 }
 
 impl LocalPty {
-    pub fn spawn(app: AppHandle, id: String, cols: u16, rows: u16, terminal: Option<String>) -> Result<Self> {
+    pub fn spawn(
+        app: AppHandle,
+        id: String,
+        cols: u16,
+        rows: u16,
+        terminal: Option<String>,
+    ) -> Result<Self> {
         let pty_system = native_pty_system();
         let pair = pty_system
             .openpty(PtySize {
@@ -133,7 +139,8 @@ fn resolve_command(id: Option<String>) -> CommandBuilder {
         #[cfg(target_os = "windows")]
         Some(id_str) => match id_str {
             "cmd" => {
-                let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+                let system_root =
+                    std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
                 let cmd_path = format!("{}\\System32\\cmd.exe", system_root);
                 let mut cmd = CommandBuilder::new(cmd_path);
                 if let Some(home) = dirs_home() {
@@ -143,8 +150,12 @@ fn resolve_command(id: Option<String>) -> CommandBuilder {
                 cmd
             }
             "powershell" => {
-                let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
-                let ps_path = format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", system_root);
+                let system_root =
+                    std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+                let ps_path = format!(
+                    "{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                    system_root
+                );
                 let mut cmd = CommandBuilder::new(ps_path);
                 if let Some(home) = dirs_home() {
                     cmd.cwd(home);
@@ -166,11 +177,12 @@ fn resolve_command(id: Option<String>) -> CommandBuilder {
                 cmd
             }
             "gitbash" => {
-                let gitbash_path = if std::path::Path::new("C:\\Program Files\\Git\\bin\\bash.exe").exists() {
-                    "C:\\Program Files\\Git\\bin\\bash.exe".to_string()
-                } else {
-                    "C:\\Program Files (x86)\\Git\\bin\\bash.exe".to_string()
-                };
+                let gitbash_path =
+                    if std::path::Path::new("C:\\Program Files\\Git\\bin\\bash.exe").exists() {
+                        "C:\\Program Files\\Git\\bin\\bash.exe".to_string()
+                    } else {
+                        "C:\\Program Files (x86)\\Git\\bin\\bash.exe".to_string()
+                    };
                 let mut cmd = CommandBuilder::new(gitbash_path);
                 cmd.args(["-i", "-l"]);
                 if let Some(home) = dirs_home() {
@@ -180,7 +192,8 @@ fn resolve_command(id: Option<String>) -> CommandBuilder {
                 cmd
             }
             "wsl" => {
-                let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+                let system_root =
+                    std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
                 let wsl_path = format!("{}\\System32\\wsl.exe", system_root);
                 CommandBuilder::new(wsl_path)
             }
