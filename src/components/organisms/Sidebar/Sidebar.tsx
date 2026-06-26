@@ -93,7 +93,7 @@ export default function Sidebar({
   return (
     <aside className={styles.sidebar}>
       <div className={styles.header}>
-        <span className={styles.brand}>s-term</span>
+        <span className={styles.brand}>S-Term</span>
         <div>
           <IconButton title={t("sidebar.settings")} onClick={onOpenSettings}>
             <Settings fontSize="small" />

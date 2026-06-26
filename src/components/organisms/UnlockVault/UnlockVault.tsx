@@ -52,7 +52,7 @@ export default function UnlockVault({ onUnlocked }: Props) {
   return (
     <div className={styles.screen}>
       <form className={styles.card} onSubmit={handleSubmit}>
-        <h1>s-term</h1>
+        <h1>S-Term</h1>
         <p className={styles.subtitle}>
           {exists
             ? t("vault.unlockSubtitle")

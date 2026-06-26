@@ -1,4 +1,4 @@
-# s-term
+# S-Term
 
 [![Latest Release](https://img.shields.io/github/v/release/JohanLeonardoIbarra/s-term)](https://github.com/JohanLeonardoIbarra/s-term/releases/latest)
 [![License](https://img.shields.io/github/license/JohanLeonardoIbarra/s-term)](LICENSE)
