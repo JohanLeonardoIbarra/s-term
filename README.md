@@ -1,5 +1,9 @@
 # S-Term
 
+<p align="center">
+  <img src="docs/app-icon.png" alt="S-Term icon" width="128" />
+</p>
+
 [![Latest Release](https://img.shields.io/github/v/release/JohanLeonardoIbarra/s-term)](https://github.com/JohanLeonardoIbarra/s-term/releases/latest)
 [![License](https://img.shields.io/github/license/JohanLeonardoIbarra/s-term)](LICENSE)
 
