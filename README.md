@@ -1,7 +1,7 @@
 # S-Term
 
 <p align="center">
-  <img src="docs/app-icon.png" alt="S-Term icon" width="128" />
+  <img src="docs/app-screenshot.png" alt="S-Term screenshot" width="800" />
 </p>
 
 [![Latest Release](https://img.shields.io/github/v/release/JohanLeonardoIbarra/s-term)](https://github.com/JohanLeonardoIbarra/s-term/releases/latest)
