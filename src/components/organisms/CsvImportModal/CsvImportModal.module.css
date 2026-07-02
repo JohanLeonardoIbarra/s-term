@@ -1,0 +1,45 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: calc(var(--ui-font-size) * 0.85);
+  margin: 0;
+}
+
+.notice {
+  color: var(--muted);
+  font-size: calc(var(--ui-font-size) * 0.85);
+  margin: 0;
+}
+
+.result {
+  padding: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+}
+
+.result p {
+  margin: 0 0 4px;
+  font-size: calc(var(--ui-font-size) * 0.92);
+}
+
+.errorLabel {
+  color: var(--danger);
+  font-size: calc(var(--ui-font-size) * 0.85);
+  margin-top: 8px;
+}
+
+.errorList {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  color: var(--danger);
+  font-size: calc(var(--ui-font-size) * 0.82);
+}
+
+.errorList li {
+  margin-bottom: 2px;
+}

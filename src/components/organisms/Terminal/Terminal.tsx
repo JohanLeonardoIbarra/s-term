@@ -88,6 +88,19 @@ export default function Terminal({
       }
     });
 
+    term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+      const isCopyShortcut =
+        (event.ctrlKey || event.metaKey) && event.key === "c";
+
+      if (isCopyShortcut && term.hasSelection()) {
+        const selection = term.getSelection();
+        navigator.clipboard.writeText(selection).catch(() => {});
+        return false;
+      }
+
+      return true;
+    });
+
     termRef.current = term;
     fitRef.current = fit;
 

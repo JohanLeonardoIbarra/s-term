@@ -400,6 +400,13 @@ impl Vault {
             .ok_or_else(|| Error::NotFound(id.to_string()))
     }
 
+    /// Find a key ID by its name. Returns None if no key with that name exists.
+    pub fn find_key_by_name(&self, name: &str) -> Option<String> {
+        let guard = self.inner.lock().unwrap();
+        let data = guard.data.as_ref()?;
+        data.keys.iter().find(|k| k.name == name).map(|k| k.id.clone())
+    }
+
     // ---- Backup (export / import) -----------------------------------------
 
     /// Serialize the whole vault (connections + keys) into a portable,
