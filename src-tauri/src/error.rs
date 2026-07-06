@@ -28,6 +28,12 @@ impl From<ssh2::Error> for Error {
     }
 }
 
+impl From<csv::Error> for Error {
+    fn from(e: csv::Error) -> Self {
+        Error::Other(e.to_string())
+    }
+}
+
 impl Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where

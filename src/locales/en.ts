@@ -15,6 +15,8 @@ export const en = {
   "sidebar.localTerminal": "+ Local terminal",
   "sidebar.connections": "Connections",
   "sidebar.import": "Import connections",
+  "sidebar.importBackup": "Import from backup",
+  "sidebar.importCsv": "Import from CSV",
   "sidebar.export": "Export connections",
   "sidebar.manageKeys": "Manage keys",
   "sidebar.newConnection": "New connection",
@@ -86,5 +88,13 @@ export const en = {
   "app.importLabel": "Import",
   "app.imported": "Imported {count} connection(s).",
   "app.noSessions": "No active sessions",
-  "app.openHint": "Open a local terminal or connect to a saved SSH host from the sidebar."
+  "app.openHint": "Open a local terminal or connect to a saved SSH host from the sidebar.",
+  "csv.title": "Import from CSV",
+  "csv.templateDesc": "Download a template, fill it with your connections (leave keyName and password empty for agent auth), then upload it.",
+  "csv.downloadTemplate": "Download template",
+  "csv.templateDownloaded": "Template downloaded.",
+  "csv.upload": "Upload CSV",
+  "csv.importing": "Importing…",
+  "csv.imported": "Imported {count} connection(s).",
+  "csv.errors": "Errors"
 } as const;

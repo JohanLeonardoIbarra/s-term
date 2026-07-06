@@ -29,6 +29,7 @@ zeroize = "1"
 thiserror = "1"
 which = "6"
 tokio = { version = "1", features = ["sync", "time"] }
+csv = "1"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified,

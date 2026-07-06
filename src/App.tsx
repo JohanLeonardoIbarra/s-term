@@ -8,6 +8,7 @@ import KeyManager from "./components/organisms/KeyManager";
 import PasswordPrompt from "./components/organisms/PasswordPrompt";
 import ConfirmModal from "./components/organisms/ConfirmModal";
 import SettingsModal from "./components/organisms/SettingsModal";
+import CsvImportModal from "./components/organisms/CsvImportModal";
 import Toast from "./components/atoms/Toast";
 import styles from "./App.module.css";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -55,6 +56,7 @@ export default function App() {
   const [editing, setEditing] = useState<ConnectionView | null>(null);
   const [showKeys, setShowKeys] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<PromptState | null>(null);
@@ -205,7 +207,7 @@ export default function App() {
     });
   }
 
-  async function handleImport() {
+  async function handleImportBackup() {
     let selected: string | string[] | null;
     try {
       selected = await open({
@@ -255,7 +257,8 @@ export default function App() {
         onDeleteConnection={handleDeleteConnection}
         onManageKeys={() => setShowKeys(true)}
         onExport={handleExport}
-        onImport={handleImport}
+        onImportBackup={handleImportBackup}
+        onImportCsv={() => setShowCsvImport(true)}
         onLock={handleLock}
         onOpenSettings={() => setShowSettings(true)}
         availableTerminals={availableTerminals}
@@ -348,6 +351,15 @@ export default function App() {
           settings={settings}
           onSave={handleSaveSettings}
           onCancel={() => setShowSettings(false)}
+        />
+      )}
+
+      {showCsvImport && (
+        <CsvImportModal
+          onImported={() => {
+            void refresh();
+          }}
+          onClose={() => setShowCsvImport(false)}
         />
       )}
 

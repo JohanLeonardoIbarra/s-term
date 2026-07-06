@@ -11,7 +11,16 @@ use error::{Error, Result};
 use pty::{detect_terminals, LocalPty, TerminalInfo};
 use session::SessionManager;
 use ssh::SshSession;
-use vault::{ConnectionInput, ConnectionView, KeyInput, KeyView, Vault};
+use vault::{AuthMethod, ConnectionInput, ConnectionView, KeyInput, KeyView, Vault};
+
+// ---- CSV import result ----------------------------------------------------
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CsvImportResult {
+    pub imported: usize,
+    pub errors: Vec<String>,
+}
 
 // ---- Vault commands -------------------------------------------------------
 
@@ -102,6 +111,137 @@ fn import_connections(path: String, password: String, vault: State<'_, Vault>) -
     vault.import_bytes(&data, &password)
 }
 
+// ---- CSV commands --------------------------------------------------------
+
+#[tauri::command]
+fn download_csv_template(path: String) -> Result<()> {
+    let headers = [
+        "name",
+        "host",
+        "port",
+        "username",
+        "groupName",
+        "keyName",
+        "password",
+    ];
+    let example = [
+        "example-server",
+        "192.168.1.1",
+        "22",
+        "user",
+        "MyGroup",
+        "",
+        "",
+    ];
+
+    let mut wtr = csv::Writer::from_path(&path).map_err(Error::from)?;
+    wtr.write_record(headers).map_err(Error::from)?;
+    wtr.write_record(example).map_err(Error::from)?;
+    wtr.flush().map_err(Error::from)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> {
+    let mut rdr = csv::Reader::from_path(&path).map_err(Error::from)?;
+
+    let mut pending: Vec<ConnectionInput> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    for (i, result) in rdr.deserialize().enumerate() {
+        let row_num = i + 2; // header is line 1, data starts at line 2
+
+        let record: CsvRow = match result {
+            Ok(r) => r,
+            Err(e) => {
+                errors.push(format!("Line {}: {}", row_num, e));
+                continue;
+            }
+        };
+
+        if record.name.trim().is_empty()
+            || record.host.trim().is_empty()
+            || record.username.trim().is_empty()
+        {
+            errors.push(format!(
+                "Line {}: missing required field (name, host, username)",
+                row_num
+            ));
+            continue;
+        }
+
+        let port = if record.port.trim().is_empty() {
+            22u16
+        } else {
+            match record.port.trim().parse::<u16>() {
+                Ok(p) => p,
+                Err(_) => {
+                    errors.push(format!(
+                        "Line {}: invalid port \"{}\", using 22",
+                        row_num, record.port
+                    ));
+                    22
+                }
+            }
+        };
+
+        let key_name = record.key_name.trim();
+        let password_val = record.password.trim();
+
+        let (auth_method, key_id, password) = if !key_name.is_empty() {
+            match vault.find_key_by_name(key_name)? {
+                Some(id) => (AuthMethod::Key, Some(id), None),
+                None => {
+                    errors.push(format!(
+                        "Line {}: no stored key named \"{}\"",
+                        row_num, key_name
+                    ));
+                    continue;
+                }
+            }
+        } else if !password_val.is_empty() {
+            (AuthMethod::Password, None, Some(password_val.to_string()))
+        } else {
+            (AuthMethod::Agent, None, None)
+        };
+
+        let group = {
+            let g = record.group_name.trim();
+            if g.is_empty() {
+                None
+            } else {
+                Some(g.to_string())
+            }
+        };
+
+        pending.push(ConnectionInput {
+            name: record.name.trim().to_string(),
+            host: record.host.trim().to_string(),
+            port,
+            username: record.username.trim().to_string(),
+            auth_method,
+            password,
+            key_id,
+            group,
+        });
+    }
+
+    let imported = vault.add_connections_bulk(pending)?;
+    Ok(CsvImportResult { imported, errors })
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CsvRow {
+    name: String,
+    host: String,
+    port: String,
+    username: String,
+    group_name: String,
+    key_name: String,
+    password: String,
+}
+
 // ---- Session commands -----------------------------------------------------
 
 #[tauri::command]
@@ -190,6 +330,8 @@ pub fn run() {
             read_key_file,
             export_connections,
             import_connections,
+            download_csv_template,
+            import_csv,
             list_terminals,
             create_local_session,
             connect_ssh,

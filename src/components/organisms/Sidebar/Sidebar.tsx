@@ -1,14 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Lock from "@mui/icons-material/Lock";
 import Settings from "@mui/icons-material/Settings";
 import Key from "@mui/icons-material/Key";
-import FileDownload from "@mui/icons-material/FileDownload";
 import FileUpload from "@mui/icons-material/FileUpload";
 import Add from "@mui/icons-material/Add";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import IconButton from "../../atoms/IconButton";
 import TerminalSelector from "../../molecules/TerminalSelector";
+import ImportMenu from "../../molecules/ImportMenu";
 import ConnectionRow from "../../molecules/ConnectionRow";
 import { useTranslation } from "../../../i18n";
 import type { ConnectionView, TerminalInfo } from "../../../types";
@@ -27,7 +27,8 @@ interface Props {
   onDeleteConnection: (c: ConnectionView) => void;
   onManageKeys: () => void;
   onExport: () => void;
-  onImport: () => void;
+  onImportBackup: () => void;
+  onImportCsv: () => void;
   onLock: () => void;
   onOpenSettings: () => void;
   availableTerminals?: TerminalInfo[];
@@ -43,7 +44,8 @@ export default function Sidebar({
   onDeleteConnection,
   onManageKeys,
   onExport,
-  onImport,
+  onImportBackup,
+  onImportCsv,
   onLock,
   onOpenSettings,
   availableTerminals = [],
@@ -53,7 +55,23 @@ export default function Sidebar({
   const [disabledConnections, setDisabledConnections] = useState<Set<string>>(
     new Set()
   );
-  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>(() => {
+    try {
+      const stored = localStorage.getItem("s-term-collapsed-groups");
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore parse errors
+    }
+    return {};
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("s-term-collapsed-groups", JSON.stringify(collapsedGroups));
+    } catch {
+      // ignore write errors
+    }
+  }, [collapsedGroups]);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectionView[]>();
@@ -114,9 +132,7 @@ export default function Sidebar({
       <div className={styles.sectionTitle}>
         <span>{t("sidebar.connections")}</span>
         <div>
-          <IconButton title={t("sidebar.import")} onClick={onImport}>
-            <FileDownload fontSize="small" />
-          </IconButton>
+          <ImportMenu onImportBackup={onImportBackup} onImportCsv={onImportCsv} />
           <IconButton title={t("sidebar.export")} onClick={onExport}>
             <FileUpload fontSize="small" />
           </IconButton>

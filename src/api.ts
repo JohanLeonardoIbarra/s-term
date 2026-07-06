@@ -87,6 +87,18 @@ export function importConnections(
   return invoke("import_connections", { path, password });
 }
 
+/** Writes a CSV template (headers + example row) to the given path. */
+export function downloadCsvTemplate(path: string): Promise<void> {
+  return invoke("download_csv_template", { path });
+}
+
+/** Imports connections from a CSV file. Returns count + per-row errors. */
+export function importCsv(
+  path: string
+): Promise<{ imported: number; errors: string[] }> {
+  return invoke("import_csv", { path });
+}
+
 // ---- Sessions -------------------------------------------------------------
 
 export function listTerminals(): Promise<TerminalInfo[]> {
