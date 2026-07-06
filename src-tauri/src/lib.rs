@@ -115,12 +115,28 @@ fn import_connections(path: String, password: String, vault: State<'_, Vault>) -
 
 #[tauri::command]
 fn download_csv_template(path: String) -> Result<()> {
-    let headers = ["name", "host", "port", "username", "groupName", "keyName", "password"];
-    let example = ["example-server", "192.168.1.1", "22", "user", "MyGroup", "", ""];
+    let headers = [
+        "name",
+        "host",
+        "port",
+        "username",
+        "groupName",
+        "keyName",
+        "password",
+    ];
+    let example = [
+        "example-server",
+        "192.168.1.1",
+        "22",
+        "user",
+        "MyGroup",
+        "",
+        "",
+    ];
 
     let mut wtr = csv::Writer::from_path(&path).map_err(Error::from)?;
-    wtr.write_record(&headers).map_err(Error::from)?;
-    wtr.write_record(&example).map_err(Error::from)?;
+    wtr.write_record(headers).map_err(Error::from)?;
+    wtr.write_record(example).map_err(Error::from)?;
     wtr.flush().map_err(Error::from)?;
     Ok(())
 }
@@ -129,7 +145,7 @@ fn download_csv_template(path: String) -> Result<()> {
 fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> {
     let mut rdr = csv::Reader::from_path(&path).map_err(Error::from)?;
 
-    let mut imported = 0usize;
+    let mut pending: Vec<ConnectionInput> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
 
     for (i, result) in rdr.deserialize().enumerate() {
@@ -143,8 +159,14 @@ fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> 
             }
         };
 
-        if record.name.trim().is_empty() || record.host.trim().is_empty() || record.username.trim().is_empty() {
-            errors.push(format!("Line {}: missing required field (name, host, username)", row_num));
+        if record.name.trim().is_empty()
+            || record.host.trim().is_empty()
+            || record.username.trim().is_empty()
+        {
+            errors.push(format!(
+                "Line {}: missing required field (name, host, username)",
+                row_num
+            ));
             continue;
         }
 
@@ -154,7 +176,10 @@ fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> 
             match record.port.trim().parse::<u16>() {
                 Ok(p) => p,
                 Err(_) => {
-                    errors.push(format!("Line {}: invalid port \"{}\", using 22", row_num, record.port));
+                    errors.push(format!(
+                        "Line {}: invalid port \"{}\", using 22",
+                        row_num, record.port
+                    ));
                     22
                 }
             }
@@ -164,11 +189,13 @@ fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> 
         let password_val = record.password.trim();
 
         let (auth_method, key_id, password) = if !key_name.is_empty() {
-            // keyName takes priority
-            match vault.find_key_by_name(key_name) {
+            match vault.find_key_by_name(key_name)? {
                 Some(id) => (AuthMethod::Key, Some(id), None),
                 None => {
-                    errors.push(format!("Line {}: no stored key named \"{}\"", row_num, key_name));
+                    errors.push(format!(
+                        "Line {}: no stored key named \"{}\"",
+                        row_num, key_name
+                    ));
                     continue;
                 }
             }
@@ -180,10 +207,14 @@ fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> 
 
         let group = {
             let g = record.group_name.trim();
-            if g.is_empty() { None } else { Some(g.to_string()) }
+            if g.is_empty() {
+                None
+            } else {
+                Some(g.to_string())
+            }
         };
 
-        let input = ConnectionInput {
+        pending.push(ConnectionInput {
             name: record.name.trim().to_string(),
             host: record.host.trim().to_string(),
             port,
@@ -192,14 +223,10 @@ fn import_csv(path: String, vault: State<'_, Vault>) -> Result<CsvImportResult> 
             password,
             key_id,
             group,
-        };
-
-        match vault.add_connection(input) {
-            Ok(_) => imported += 1,
-            Err(e) => errors.push(format!("Line {}: {}", row_num, e)),
-        }
+        });
     }
 
+    let imported = vault.add_connections_bulk(pending)?;
     Ok(CsvImportResult { imported, errors })
 }
 

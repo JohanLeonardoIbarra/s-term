@@ -400,11 +400,38 @@ impl Vault {
             .ok_or_else(|| Error::NotFound(id.to_string()))
     }
 
-    /// Find a key ID by its name. Returns None if no key with that name exists.
-    pub fn find_key_by_name(&self, name: &str) -> Option<String> {
+    /// Find a key ID by its name. Returns `Ok(None)` if no key with that
+    /// name exists, or `Err(Error::Locked)` when the vault is locked.
+    pub fn find_key_by_name(&self, name: &str) -> Result<Option<String>> {
         let guard = self.inner.lock().unwrap();
-        let data = guard.data.as_ref()?;
-        data.keys.iter().find(|k| k.name == name).map(|k| k.id.clone())
+        let data = guard.data.as_ref().ok_or(Error::Locked)?;
+        Ok(data
+            .keys
+            .iter()
+            .find(|k| k.name == name)
+            .map(|k| k.id.clone()))
+    }
+
+    /// Add multiple connections in a single persist operation.
+    pub fn add_connections_bulk(&self, inputs: Vec<ConnectionInput>) -> Result<usize> {
+        self.mutate(|data| {
+            let mut count = 0;
+            for input in inputs {
+                data.connections.push(Connection {
+                    id: Uuid::new_v4().to_string(),
+                    name: input.name,
+                    host: input.host,
+                    port: input.port,
+                    username: input.username,
+                    auth_method: input.auth_method,
+                    password: input.password,
+                    key_id: input.key_id,
+                    group: input.group,
+                });
+                count += 1;
+            }
+            Ok(count)
+        })
     }
 
     // ---- Backup (export / import) -----------------------------------------
