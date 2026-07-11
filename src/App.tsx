@@ -23,6 +23,7 @@ import {
   listKeys,
   listTerminals,
   lockVault,
+  updateConnection,
   vaultIsUnlocked,
 } from "./api";
 import { getSettings, saveSettings } from "./settings";
@@ -180,6 +181,45 @@ export default function App() {
     setActiveId(null);
   }
 
+  const handleConnectionGroupChange = async (id: string, group: string | null) => {
+    const c = connections.find((conn) => conn.id === id);
+    if (!c) return;
+    await updateConnection(id, {
+      name: c.name,
+      host: c.host,
+      port: c.port,
+      username: c.username,
+      authMethod: c.authMethod,
+      keyId: c.keyId,
+      group,
+    });
+    void refresh();
+  };
+
+  const handleEditGroup = async (oldName: string, newName: string) => {
+    const groupConnections = connections.filter((c) => c.group === oldName);
+    await Promise.all(
+      groupConnections.map((c) =>
+        updateConnection(c.id, {
+          name: c.name,
+          host: c.host,
+          port: c.port,
+          username: c.username,
+          authMethod: c.authMethod,
+          keyId: c.keyId,
+          group: newName,
+        })
+      )
+    );
+    void refresh();
+  };
+
+  const handleDeleteGroup = async (groupName: string) => {
+    const groupConnections = connections.filter((c) => c.group === groupName);
+    await Promise.all(groupConnections.map((c) => deleteConnection(c.id)));
+    void refresh();
+  };
+
   async function handleExport() {
     let path: string | null;
     try {
@@ -255,6 +295,9 @@ export default function App() {
           setShowConnForm(true);
         }}
         onDeleteConnection={handleDeleteConnection}
+        onConnectionGroupChange={handleConnectionGroupChange}
+        onEditGroup={handleEditGroup}
+        onDeleteGroup={handleDeleteGroup}
         onManageKeys={() => setShowKeys(true)}
         onExport={handleExport}
         onImportBackup={handleImportBackup}

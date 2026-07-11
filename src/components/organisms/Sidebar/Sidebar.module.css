@@ -39,18 +39,49 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.connectionListInner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  min-height: 0;
+  cursor: default;
 }
 
 .group {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  cursor: default;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 4px;
+}
+
+.groupEditWrap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.group:hover .groupEditWrap {
+  opacity: 1;
 }
 
 .groupLabel {
+  flex: 1;
   font-size: calc(var(--ui-font-size) * 0.8);
   color: var(--muted);
-  margin: 8px 0 4px;
+  margin: 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -58,12 +89,16 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
   text-align: left;
+  outline: none;
 }
 
 .groupLabel:hover {
   color: var(--text);
+}
+
+.groupLabel:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .chevron {
@@ -71,7 +106,24 @@
   transition: transform 0.2s;
 }
 
+.groupConnections {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+}
+
 .muted {
   color: var(--muted);
   font-size: calc(var(--ui-font-size) * 0.85);
+}
+
+/* Override hello-pangea placeholders cursor */
+:global(.rbd-placeholder),
+:global(.rbd-droppable) {
+  cursor: default !important;
+}
+
+:global(.rbd-dragging) {
+  cursor: grabbing !important;
 }
