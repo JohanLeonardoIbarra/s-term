@@ -39,18 +39,64 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.connectionListInner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  min-height: 0;
 }
 
 .group {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 4px;
+}
+
+.groupHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0 4px;
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.groupHeader.handleVisible .groupHandle {
+  opacity: 1;
+  width: auto;
+}
+
+.groupHandle:hover {
+  color: var(--text);
+}
+
+.groupHandle:active {
+  cursor: grabbing;
 }
 
 .groupLabel {
+  flex: 1;
   font-size: calc(var(--ui-font-size) * 0.8);
   color: var(--muted);
-  margin: 8px 0 4px;
+  margin: 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -58,8 +104,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
   text-align: left;
+  transition: padding-left 0.2s ease;
 }
 
 .groupLabel:hover {
@@ -69,6 +115,16 @@
 .chevron {
   font-size: calc(var(--ui-font-size) * 0.72);
   transition: transform 0.2s;
+}
+
+.groupConnections {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dragging {
+  cursor: grabbing;
 }
 
 .muted {

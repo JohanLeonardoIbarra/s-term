@@ -23,6 +23,7 @@ export const en = {
   "sidebar.noConnections": "No connections yet. Add one with \"+\".",
   "sidebar.edit": "Edit",
   "sidebar.delete": "Delete",
+  "sidebar.dragToReorder": "Drag to reorder",
   "conn.edit": "Edit connection",
   "conn.new": "New connection",
   "conn.name": "Name",
