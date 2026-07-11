@@ -14,7 +14,6 @@ import FileUpload from "@mui/icons-material/FileUpload";
 import Add from "@mui/icons-material/Add";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ChevronRight from "@mui/icons-material/ChevronRight";
-import DragIndicator from "@mui/icons-material/DragIndicator";
 import IconButton from "../../atoms/IconButton";
 import TerminalSelector from "../../molecules/TerminalSelector";
 import ImportMenu from "../../molecules/ImportMenu";
@@ -39,40 +38,20 @@ interface GroupItemProps {
 }
 
 function GroupItem({ name, groupConnections, collapsed, onToggle, provided, renderConnection }: GroupItemProps) {
-  const { t } = useTranslation();
-  const [isHoveringLeft, setIsHoveringLeft] = useState(false);
-  
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const isLeftFifth = x < rect.width / 15;
-    setIsHoveringLeft(isLeftFifth);
-  };
-  
-  const handleMouseLeave = () => {
-    setIsHoveringLeft(false);
-  };
-  
-  const headerClasses = [styles.groupHeader, isHoveringLeft ? styles.handleVisible : ""].filter(Boolean).join(" ");
-  
   return (
-    <div className={styles.group} ref={provided.innerRef} {...provided.draggableProps}>
-      <div 
-        className={headerClasses}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        <span
-          className={styles.groupHandle}
-          data-drag-handle
-          title={t("sidebar.dragToReorder")}
-          {...provided.dragHandleProps}
-        >
-          <DragIndicator fontSize="small" />
-        </span>
-        <button
+    <div className={styles.group} ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+      <div className={styles.groupHeader}>
+        <div
           className={`${styles.groupLabel} label-caps`}
+          role="button"
+          tabIndex={0}
           onClick={onToggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle();
+            }
+          }}
         >
           <span className={styles.chevron}>
             {collapsed ? (
@@ -82,7 +61,7 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, provided, rend
             )}
           </span>
           {name}
-        </button>
+        </div>
       </div>
       {!collapsed && (
         <Droppable droppableId={`group-${name}`} type="GROUP">
