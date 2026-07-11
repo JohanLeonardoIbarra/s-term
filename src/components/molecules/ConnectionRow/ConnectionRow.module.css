@@ -5,6 +5,12 @@
   overflow: hidden;
   background: var(--bg-alt);
   border: 1px solid var(--border);
+  position: relative;
+}
+
+.row.dragging {
+  background: var(--bg);
+  border-color: var(--accent);
 }
 
 .handle {

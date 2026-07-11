@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { DraggableProvided } from "@hello-pangea/dnd";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import DragIndicator from "@mui/icons-material/DragIndicator";
@@ -11,6 +12,7 @@ interface Props {
   connection: ConnectionView;
   className?: string;
   disabled?: boolean;
+  provided?: DraggableProvided;
   onConnect: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -20,6 +22,7 @@ export default function ConnectionRow({
   connection,
   className = "",
   disabled = false,
+  provided,
   onConnect,
   onEdit,
   onDelete,
@@ -41,15 +44,18 @@ export default function ConnectionRow({
   const classes = [styles.row, isHoveringLeft ? styles.handleVisible : "", className].filter(Boolean).join(" ");
   return (
     <div 
+      ref={provided?.innerRef}
       className={classes}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      {...provided?.draggableProps}
     >
       <span
         className={styles.handle}
         data-drag-handle
         title={t("sidebar.dragToReorder")}
         onClick={(e) => e.stopPropagation()}
+        {...provided?.dragHandleProps}
       >
         <DragIndicator fontSize="small" />
       </span>

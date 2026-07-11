@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+  type DraggableProvided,
+  type DroppableProvided,
+} from "@hello-pangea/dnd";
 import Lock from "@mui/icons-material/Lock";
 import Settings from "@mui/icons-material/Settings";
 import Key from "@mui/icons-material/Key";
@@ -11,7 +19,6 @@ import IconButton from "../../atoms/IconButton";
 import TerminalSelector from "../../molecules/TerminalSelector";
 import ImportMenu from "../../molecules/ImportMenu";
 import ConnectionRow from "../../molecules/ConnectionRow";
-import DraggableList from "../../molecules/DraggableList";
 import { useTranslation } from "../../../i18n";
 import type { ConnectionView, TerminalInfo } from "../../../types";
 import {
@@ -27,11 +34,11 @@ interface GroupItemProps {
   groupConnections: ConnectionView[];
   collapsed: boolean | undefined;
   onToggle: () => void;
-  onReorder: (from: number, to: number) => void;
-  renderConnection: (c: ConnectionView, isDragging: boolean) => React.ReactNode;
+  provided: DraggableProvided;
+  renderConnection: (c: ConnectionView, index: number, provided?: DraggableProvided) => React.ReactNode;
 }
 
-function GroupItem({ name, groupConnections, collapsed, onToggle, onReorder, renderConnection }: GroupItemProps) {
+function GroupItem({ name, groupConnections, collapsed, onToggle, provided, renderConnection }: GroupItemProps) {
   const { t } = useTranslation();
   const [isHoveringLeft, setIsHoveringLeft] = useState(false);
   
@@ -49,7 +56,7 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, onReorder, ren
   const headerClasses = [styles.groupHeader, isHoveringLeft ? styles.handleVisible : ""].filter(Boolean).join(" ");
   
   return (
-    <div className={styles.group}>
+    <div className={styles.group} ref={provided.innerRef} {...provided.draggableProps}>
       <div 
         className={headerClasses}
         onMouseMove={handleMouseMove}
@@ -59,6 +66,7 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, onReorder, ren
           className={styles.groupHandle}
           data-drag-handle
           title={t("sidebar.dragToReorder")}
+          {...provided.dragHandleProps}
         >
           <DragIndicator fontSize="small" />
         </span>
@@ -77,12 +85,22 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, onReorder, ren
         </button>
       </div>
       {!collapsed && (
-        <DraggableList
-          items={groupConnections}
-          listClassName={styles.groupConnections}
-          renderItem={(c, _index, isGroupDragging) => renderConnection(c, isGroupDragging)}
-          onReorder={onReorder}
-        />
+        <Droppable droppableId={`group-${name}`} type="GROUP">
+          {(droppableProvided: DroppableProvided) => (
+            <div
+              ref={droppableProvided.innerRef}
+              {...droppableProvided.droppableProps}
+              className={styles.groupConnections}
+            >
+              {groupConnections.map((c, index) => (
+                <Draggable key={`conn-${c.id}`} draggableId={`conn-${c.id}`} index={index}>
+                  {(connProvided) => renderConnection(c, index, connProvided)}
+                </Draggable>
+              ))}
+              {droppableProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
       )}
     </div>
   );
@@ -99,6 +117,7 @@ interface Props {
   onNewConnection: () => void;
   onEditConnection: (c: ConnectionView) => void;
   onDeleteConnection: (c: ConnectionView) => void;
+  onConnectionGroupChange?: (id: string, group: string | null) => Promise<void>;
   onManageKeys: () => void;
   onExport: () => void;
   onImportBackup: () => void;
@@ -116,6 +135,7 @@ export default function Sidebar({
   onNewConnection,
   onEditConnection,
   onDeleteConnection,
+  onConnectionGroupChange,
   onManageKeys,
   onExport,
   onImportBackup,
@@ -182,32 +202,10 @@ export default function Sidebar({
     }));
   };
 
-  const handleReorderTopLevel = (fromIndex: number, toIndex: number) => {
-    setSidebarOrder((prev) => {
-      const topLevel = [...prev.topLevel];
-      const [moved] = topLevel.splice(fromIndex, 1);
-      topLevel.splice(toIndex, 0, moved);
-      const next = { ...prev, topLevel };
-      saveSidebarOrder(next);
-      return next;
-    });
-  };
-
-  const handleReorderGroup = (groupName: string, fromIndex: number, toIndex: number) => {
-    setSidebarOrder((prev) => {
-      const items = [...(prev.groupItems[groupName] ?? [])];
-      const [moved] = items.splice(fromIndex, 1);
-      items.splice(toIndex, 0, moved);
-      const next = { ...prev, groupItems: { ...prev.groupItems, [groupName]: items } };
-      saveSidebarOrder(next);
-      return next;
-    });
-  };
-
-  const renderConnection = (c: ConnectionView, isDragging: boolean) => (
+  const renderConnection = (c: ConnectionView, _index: number, provided?: DraggableProvided) => (
     <ConnectionRow
       key={c.id}
-      className={isDragging ? styles.dragging : ""}
+      provided={provided}
       connection={c}
       disabled={disabledConnections.has(c.id)}
       onConnect={() => handleConnect(c)}
@@ -216,13 +214,19 @@ export default function Sidebar({
     />
   );
 
-  const renderTopLevelItem = (item: SidebarOrder["topLevel"][number], _index: number, isDragging: boolean) => {
-    if (item.type === "connection") {
-      const c = connectionById.get(item.id);
-      if (!c) return null;
-      return renderConnection(c, isDragging);
-    }
+  const renderTopLevelConnection = (item: SidebarOrder["topLevel"][number], index: number) => {
+    if (item.type !== "connection") return null;
+    const c = connectionById.get(item.id);
+    if (!c) return null;
+    return (
+      <Draggable key={`conn-top-${c.id}`} draggableId={`conn-top-${c.id}`} index={index}>
+        {(provided) => renderConnection(c, index, provided)}
+      </Draggable>
+    );
+  };
 
+  const renderTopLevelGroup = (item: SidebarOrder["topLevel"][number], index: number) => {
+    if (item.type !== "group") return null;
     const name = item.name;
     const groupIds = sidebarOrder.groupItems[name] ?? [];
     const groupConnections = groupIds
@@ -230,16 +234,106 @@ export default function Sidebar({
       .filter((c): c is ConnectionView => c != null);
 
     return (
-      <GroupItem
-        key={name}
-        name={name}
-        groupConnections={groupConnections}
-        collapsed={collapsedGroups[name]}
-        onToggle={() => toggleGroup(name)}
-        onReorder={(from, to) => handleReorderGroup(name, from, to)}
-        renderConnection={renderConnection}
-      />
+      <Draggable key={`group-${name}`} draggableId={`group-${name}`} index={index}>
+        {(provided) => (
+          <GroupItem
+            name={name}
+            groupConnections={groupConnections}
+            collapsed={collapsedGroups[name]}
+            onToggle={() => toggleGroup(name)}
+            provided={provided}
+            renderConnection={renderConnection}
+          />
+        )}
+      </Draggable>
     );
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const sourceIsTopLevel = source.droppableId === "top-level";
+    const destIsTopLevel = destination.droppableId === "top-level";
+    const sourceGroupId = sourceIsTopLevel ? null : source.droppableId.replace("group-", "");
+    const destGroupId = destIsTopLevel ? null : destination.droppableId.replace("group-", "");
+
+    // Reorder within top-level
+    if (sourceIsTopLevel && destIsTopLevel) {
+      setSidebarOrder((prev) => {
+        const topLevel = [...prev.topLevel];
+        const [moved] = topLevel.splice(source.index, 1);
+        topLevel.splice(destination.index, 0, moved);
+        const next = { ...prev, topLevel };
+        saveSidebarOrder(next);
+        return next;
+      });
+      return;
+    }
+
+    // Reorder within the same group
+    if (sourceGroupId && destGroupId && sourceGroupId === destGroupId) {
+      setSidebarOrder((prev) => {
+        const items = [...(prev.groupItems[sourceGroupId] ?? [])];
+        const [moved] = items.splice(source.index, 1);
+        items.splice(destination.index, 0, moved);
+        const next = { ...prev, groupItems: { ...prev.groupItems, [sourceGroupId]: items } };
+        saveSidebarOrder(next);
+        return next;
+      });
+      return;
+    }
+
+    // Moving connection between containers
+    const connId = draggableId.startsWith("conn-top-")
+      ? draggableId.replace("conn-top-", "")
+      : draggableId.replace("conn-", "");
+    const newGroup = destIsTopLevel ? null : destGroupId;
+
+    if (onConnectionGroupChange) {
+      try {
+        await onConnectionGroupChange(connId, newGroup);
+      } catch {
+        return;
+      }
+    }
+
+    setSidebarOrder((prev) => {
+      const next = {
+        ...prev,
+        topLevel: [...prev.topLevel],
+        groupItems: { ...prev.groupItems },
+      };
+
+      if (sourceIsTopLevel) {
+        const [moved] = next.topLevel.splice(source.index, 1);
+        if (destIsTopLevel) {
+          next.topLevel.splice(destination.index, 0, moved);
+        } else {
+          if (!next.groupItems[destGroupId!]) {
+            next.groupItems[destGroupId!] = [];
+          }
+          next.groupItems[destGroupId!].splice(destination.index, 0, connId);
+        }
+      } else {
+        const sourceItems = [...(next.groupItems[sourceGroupId!] ?? [])];
+        const [movedId] = sourceItems.splice(source.index, 1);
+        next.groupItems[sourceGroupId!] = sourceItems;
+
+        if (destIsTopLevel) {
+          next.topLevel.splice(destination.index, 0, { type: "connection", id: movedId });
+        } else {
+          if (!next.groupItems[destGroupId!]) {
+            next.groupItems[destGroupId!] = [];
+          }
+          next.groupItems[destGroupId!].splice(destination.index, 0, movedId);
+        }
+      }
+
+      saveSidebarOrder(next);
+      return next;
+    });
   };
 
   return (
@@ -284,13 +378,25 @@ export default function Sidebar({
           <p className={styles.muted}>{t("sidebar.noConnections")}</p>
         </div>
       ) : (
-        <DraggableList
-          items={sidebarOrder.topLevel}
-          className={styles.connectionList}
-          listClassName={styles.connectionListInner}
-          renderItem={renderTopLevelItem}
-          onReorder={handleReorderTopLevel}
-        />
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="top-level" type="TOP_LEVEL">
+            {(droppableProvided: DroppableProvided) => (
+              <div
+                ref={droppableProvided.innerRef}
+                {...droppableProvided.droppableProps}
+                className={`${styles.connectionList} ${styles.connectionListInner}`}
+              >
+                {sidebarOrder.topLevel.map((item, index) => {
+                  if (item.type === "connection") {
+                    return renderTopLevelConnection(item, index);
+                  }
+                  return renderTopLevelGroup(item, index);
+                })}
+                {droppableProvided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
     </aside>
   );

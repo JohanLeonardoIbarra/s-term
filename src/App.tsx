@@ -23,6 +23,7 @@ import {
   listKeys,
   listTerminals,
   lockVault,
+  updateConnection,
   vaultIsUnlocked,
 } from "./api";
 import { getSettings, saveSettings } from "./settings";
@@ -180,6 +181,21 @@ export default function App() {
     setActiveId(null);
   }
 
+  const handleConnectionGroupChange = async (id: string, group: string | null) => {
+    const c = connections.find((conn) => conn.id === id);
+    if (!c) return;
+    await updateConnection(id, {
+      name: c.name,
+      host: c.host,
+      port: c.port,
+      username: c.username,
+      authMethod: c.authMethod,
+      keyId: c.keyId,
+      group,
+    });
+    void refresh();
+  };
+
   async function handleExport() {
     let path: string | null;
     try {
@@ -255,6 +271,7 @@ export default function App() {
           setShowConnForm(true);
         }}
         onDeleteConnection={handleDeleteConnection}
+        onConnectionGroupChange={handleConnectionGroupChange}
         onManageKeys={() => setShowKeys(true)}
         onExport={handleExport}
         onImportBackup={handleImportBackup}
