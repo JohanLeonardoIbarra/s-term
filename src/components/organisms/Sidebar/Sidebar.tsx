@@ -5,6 +5,7 @@ import {
   Draggable,
   type DropResult,
   type DraggableProvided,
+  type DraggableStateSnapshot,
   type DroppableProvided,
 } from "@hello-pangea/dnd";
 import Lock from "@mui/icons-material/Lock";
@@ -12,12 +13,14 @@ import Settings from "@mui/icons-material/Settings";
 import Key from "@mui/icons-material/Key";
 import FileUpload from "@mui/icons-material/FileUpload";
 import Add from "@mui/icons-material/Add";
+import Edit from "@mui/icons-material/Edit";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import IconButton from "../../atoms/IconButton";
 import TerminalSelector from "../../molecules/TerminalSelector";
 import ImportMenu from "../../molecules/ImportMenu";
 import ConnectionRow from "../../molecules/ConnectionRow";
+import GroupEditor from "../../organisms/GroupEditor";
 import { useTranslation } from "../../../i18n";
 import type { ConnectionView, TerminalInfo } from "../../../types";
 import {
@@ -26,6 +29,10 @@ import {
   normalizeSidebarOrder,
   type SidebarOrder,
 } from "../../../sidebarOrder";
+import {
+  loadGroupTransferLocks,
+  saveGroupTransferLocks,
+} from "../../../groupTransferLock";
 import styles from "./Sidebar.module.css";
 
 interface GroupItemProps {
@@ -33,13 +40,25 @@ interface GroupItemProps {
   groupConnections: ConnectionView[];
   collapsed: boolean | undefined;
   onToggle: () => void;
+  onEdit: () => void;
   provided: DraggableProvided;
-  renderConnection: (c: ConnectionView, index: number, provided?: DraggableProvided) => React.ReactNode;
+  snapshot: DraggableStateSnapshot;
+  renderConnection: (c: ConnectionView, index: number, provided?: DraggableProvided, snapshot?: DraggableStateSnapshot) => React.ReactNode;
 }
 
-function GroupItem({ name, groupConnections, collapsed, onToggle, provided, renderConnection }: GroupItemProps) {
+function GroupItem({ name, groupConnections, collapsed, onToggle, onEdit, provided, snapshot, renderConnection }: GroupItemProps) {
+  const { t } = useTranslation();
   return (
-    <div className={styles.group} ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+    <div
+      className={styles.group}
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      style={{
+        ...provided.draggableProps.style,
+        cursor: snapshot.isDragging ? "grabbing" : "default",
+      }}
+    >
       <div className={styles.groupHeader}>
         <div
           className={`${styles.groupLabel} label-caps`}
@@ -62,6 +81,11 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, provided, rend
           </span>
           {name}
         </div>
+        <span onPointerDown={(e) => e.stopPropagation()} className={styles.groupEditWrap}>
+          <IconButton title={t("sidebar.edit")} onClick={onEdit}>
+            <Edit fontSize="small" />
+          </IconButton>
+        </span>
       </div>
       {!collapsed && (
         <Droppable droppableId={`group-${name}`} type="GROUP">
@@ -73,7 +97,7 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, provided, rend
             >
               {groupConnections.map((c, index) => (
                 <Draggable key={`conn-${c.id}`} draggableId={`conn-${c.id}`} index={index}>
-                  {(connProvided) => renderConnection(c, index, connProvided)}
+                  {(connProvided, connSnapshot) => renderConnection(c, index, connProvided, connSnapshot)}
                 </Draggable>
               ))}
               {droppableProvided.placeholder}
@@ -97,6 +121,8 @@ interface Props {
   onEditConnection: (c: ConnectionView) => void;
   onDeleteConnection: (c: ConnectionView) => void;
   onConnectionGroupChange?: (id: string, group: string | null) => Promise<void>;
+  onEditGroup?: (oldName: string, newName: string) => Promise<void>;
+  onDeleteGroup?: (groupName: string) => Promise<void>;
   onManageKeys: () => void;
   onExport: () => void;
   onImportBackup: () => void;
@@ -115,6 +141,8 @@ export default function Sidebar({
   onEditConnection,
   onDeleteConnection,
   onConnectionGroupChange,
+  onEditGroup,
+  onDeleteGroup,
   onManageKeys,
   onExport,
   onImportBackup,
@@ -140,6 +168,10 @@ export default function Sidebar({
   const [sidebarOrder, setSidebarOrder] = useState<SidebarOrder>(() =>
     normalizeSidebarOrder(connections, loadSidebarOrder())
   );
+  const [groupTransferLocks, setGroupTransferLocks] = useState<Record<string, boolean>>(() =>
+    loadGroupTransferLocks()
+  );
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -152,6 +184,10 @@ export default function Sidebar({
   useEffect(() => {
     setSidebarOrder((prev) => normalizeSidebarOrder(connections, prev));
   }, [connections]);
+
+  useEffect(() => {
+    saveGroupTransferLocks(groupTransferLocks);
+  }, [groupTransferLocks]);
 
   const connectionById = useMemo(() => {
     const map = new Map<string, ConnectionView>();
@@ -181,10 +217,36 @@ export default function Sidebar({
     }));
   };
 
-  const renderConnection = (c: ConnectionView, _index: number, provided?: DraggableProvided) => (
+  const handleEditGroup = async (oldName: string, newName: string, blockTransfer: boolean) => {
+    if (onEditGroup) {
+      await onEditGroup(oldName, newName);
+    }
+    setGroupTransferLocks((prev) => {
+      const next = { ...prev };
+      delete next[oldName];
+      next[newName] = blockTransfer;
+      return next;
+    });
+    setEditingGroup(null);
+  };
+
+  const handleDeleteGroup = async (groupName: string) => {
+    if (onDeleteGroup) {
+      await onDeleteGroup(groupName);
+    }
+    setGroupTransferLocks((prev) => {
+      const next = { ...prev };
+      delete next[groupName];
+      return next;
+    });
+    setEditingGroup(null);
+  };
+
+  const renderConnection = (c: ConnectionView, _index: number, provided?: DraggableProvided, snapshot?: DraggableStateSnapshot) => (
     <ConnectionRow
       key={c.id}
       provided={provided}
+      snapshot={snapshot}
       connection={c}
       disabled={disabledConnections.has(c.id)}
       onConnect={() => handleConnect(c)}
@@ -214,13 +276,15 @@ export default function Sidebar({
 
     return (
       <Draggable key={`group-${name}`} draggableId={`group-${name}`} index={index}>
-        {(provided) => (
+        {(provided, snapshot) => (
           <GroupItem
             name={name}
             groupConnections={groupConnections}
             collapsed={collapsedGroups[name]}
             onToggle={() => toggleGroup(name)}
+            onEdit={() => setEditingGroup(name)}
             provided={provided}
+            snapshot={snapshot}
             renderConnection={renderConnection}
           />
         )}
@@ -237,6 +301,10 @@ export default function Sidebar({
     const destIsTopLevel = destination.droppableId === "top-level";
     const sourceGroupId = sourceIsTopLevel ? null : source.droppableId.replace("group-", "");
     const destGroupId = destIsTopLevel ? null : destination.droppableId.replace("group-", "");
+
+    // Block transfer if source or destination group is locked
+    if (!sourceIsTopLevel && groupTransferLocks[sourceGroupId!]) return;
+    if (!destIsTopLevel && groupTransferLocks[destGroupId!]) return;
 
     // Reorder within top-level
     if (sourceIsTopLevel && destIsTopLevel) {
@@ -376,6 +444,26 @@ export default function Sidebar({
             )}
           </Droppable>
         </DragDropContext>
+      )}
+
+      {editingGroup && (
+        <GroupEditor
+          groupName={editingGroup}
+          existingGroups={sidebarOrder.topLevel
+            .filter((item): item is { type: "group"; name: string } => item.type === "group")
+            .map((item) => item.name)}
+          blockTransfer={!!groupTransferLocks[editingGroup]}
+          onSave={(newName, blockTransfer) => {
+            if (newName !== editingGroup && onEditGroup) {
+              void handleEditGroup(editingGroup, newName, blockTransfer);
+            } else {
+              setGroupTransferLocks((prev) => ({ ...prev, [editingGroup]: blockTransfer }));
+              setEditingGroup(null);
+            }
+          }}
+          onDelete={() => void handleDeleteGroup(editingGroup)}
+          onClose={() => setEditingGroup(null)}
+        />
       )}
     </aside>
   );

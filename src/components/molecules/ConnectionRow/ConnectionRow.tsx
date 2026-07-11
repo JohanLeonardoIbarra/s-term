@@ -1,4 +1,4 @@
-import type { DraggableProvided } from "@hello-pangea/dnd";
+import type { DraggableProvided, DraggableStateSnapshot } from "@hello-pangea/dnd";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import IconButton from "../../atoms/IconButton";
@@ -11,6 +11,7 @@ interface Props {
   className?: string;
   disabled?: boolean;
   provided?: DraggableProvided;
+  snapshot?: DraggableStateSnapshot;
   onConnect: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -21,6 +22,7 @@ export default function ConnectionRow({
   className = "",
   disabled = false,
   provided,
+  snapshot,
   onConnect,
   onEdit,
   onDelete,
@@ -33,6 +35,10 @@ export default function ConnectionRow({
       className={classes}
       {...provided?.draggableProps}
       {...provided?.dragHandleProps}
+      style={{
+        ...provided?.draggableProps?.style,
+        cursor: snapshot?.isDragging ? "grabbing" : "default",
+      }}
     >
       <div
         className={[styles.main, disabled ? styles.disabled : ""].filter(Boolean).join(" ")}

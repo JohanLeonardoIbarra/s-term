@@ -6,6 +6,7 @@
   background: var(--bg-alt);
   border: 1px solid var(--border);
   position: relative;
+  cursor: default;
 }
 
 .row.dragging {

@@ -1,0 +1,17 @@
+.form {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+}
+
+.switchRow {
+  padding: 8px 0;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: calc(var(--ui-font-size) * 0.9);
+  margin: 0;
+}
