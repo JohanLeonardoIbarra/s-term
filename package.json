@@ -1,7 +1,7 @@
 {
   "name": "s-term",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Terminal app with multi-session management and an encrypted SSH connection directory. Built with Tauri + Rust + React + TypeScript.",
   "scripts": {
