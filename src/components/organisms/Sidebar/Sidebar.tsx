@@ -22,17 +22,9 @@ import ImportMenu from "../../molecules/ImportMenu";
 import ConnectionRow from "../../molecules/ConnectionRow";
 import GroupEditor from "../../organisms/GroupEditor";
 import { useTranslation } from "../../../i18n";
-import type { ConnectionView, TerminalInfo } from "../../../types";
-import {
-  loadSidebarOrder,
-  saveSidebarOrder,
-  normalizeSidebarOrder,
-  type SidebarOrder,
-} from "../../../sidebarOrder";
-import {
-  loadGroupTransferLocks,
-  saveGroupTransferLocks,
-} from "../../../groupTransferLock";
+import type { ConnectionView, SidebarOrder, TerminalInfo } from "../../../types";
+import { normalizeSidebarOrder } from "../../../sidebarOrder";
+import { loadSidebarState, saveSidebarState } from "../../../api";
 import styles from "./Sidebar.module.css";
 
 interface GroupItemProps {
@@ -156,38 +148,47 @@ export default function Sidebar({
   const [disabledConnections, setDisabledConnections] = useState<Set<string>>(
     new Set()
   );
-  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>(() => {
-    try {
-      const stored = localStorage.getItem("s-term-collapsed-groups");
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore parse errors
-    }
-    return {};
-  });
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedState>({});
   const [sidebarOrder, setSidebarOrder] = useState<SidebarOrder>(() =>
-    normalizeSidebarOrder(connections, loadSidebarOrder())
+    normalizeSidebarOrder(connections, null)
   );
-  const [groupTransferLocks, setGroupTransferLocks] = useState<Record<string, boolean>>(() =>
-    loadGroupTransferLocks()
-  );
+  const [groupTransferLocks, setGroupTransferLocks] = useState<Record<string, boolean>>({});
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("s-term-collapsed-groups", JSON.stringify(collapsedGroups));
-    } catch {
-      // ignore write errors
-    }
-  }, [collapsedGroups]);
+    let cancelled = false;
+    loadSidebarState()
+      .then((state) => {
+        if (cancelled) return;
+        setSidebarOrder((prev) =>
+          normalizeSidebarOrder(connections, state.order ?? prev)
+        );
+        setCollapsedGroups(state.collapsedGroups ?? {});
+        setGroupTransferLocks(state.transferLocks ?? {});
+        setLoaded(true);
+      })
+      .catch(() => {
+        // ignore errors and leave default state
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [connections]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    void saveSidebarState({
+      order: sidebarOrder,
+      collapsedGroups,
+      transferLocks: groupTransferLocks,
+    });
+  }, [sidebarOrder, collapsedGroups, groupTransferLocks, loaded]);
 
   useEffect(() => {
     setSidebarOrder((prev) => normalizeSidebarOrder(connections, prev));
   }, [connections]);
-
-  useEffect(() => {
-    saveGroupTransferLocks(groupTransferLocks);
-  }, [groupTransferLocks]);
 
   const connectionById = useMemo(() => {
     const map = new Map<string, ConnectionView>();
@@ -313,7 +314,6 @@ export default function Sidebar({
         const [moved] = topLevel.splice(source.index, 1);
         topLevel.splice(destination.index, 0, moved);
         const next = { ...prev, topLevel };
-        saveSidebarOrder(next);
         return next;
       });
       return;
@@ -326,7 +326,6 @@ export default function Sidebar({
         const [moved] = items.splice(source.index, 1);
         items.splice(destination.index, 0, moved);
         const next = { ...prev, groupItems: { ...prev.groupItems, [sourceGroupId]: items } };
-        saveSidebarOrder(next);
         return next;
       });
       return;
@@ -378,7 +377,6 @@ export default function Sidebar({
         }
       }
 
-      saveSidebarOrder(next);
       return next;
     });
   };

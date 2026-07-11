@@ -4,6 +4,7 @@ import type {
   ConnectionView,
   KeyInput,
   KeyView,
+  SidebarState,
   TerminalInfo,
 } from "./types";
 
@@ -85,6 +86,18 @@ export function importConnections(
   password: string
 ): Promise<number> {
   return invoke("import_connections", { path, password });
+}
+
+// ---- Sidebar state ----------------------------------------------------------
+
+/** Loads the persisted sidebar order, collapsed groups and transfer locks. */
+export function loadSidebarState(): Promise<SidebarState> {
+  return invoke("load_sidebar_state");
+}
+
+/** Persists the sidebar order, collapsed groups and transfer locks. */
+export function saveSidebarState(state: SidebarState): Promise<void> {
+  return invoke("save_sidebar_state", { state });
 }
 
 /** Writes a CSV template (headers + example row) to the given path. */

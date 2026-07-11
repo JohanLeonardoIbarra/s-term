@@ -1,46 +1,9 @@
-import type { ConnectionView } from "./types";
-
-export type SidebarItem =
-  | { type: "connection"; id: string }
-  | { type: "group"; name: string };
-
-export interface SidebarOrder {
-  topLevel: SidebarItem[];
-  groupItems: Record<string, string[]>;
-}
-
-const STORAGE_KEY = "s-term-sidebar-order";
+import type { ConnectionView, SidebarItem, SidebarOrder } from "./types";
 
 function getGroup(connection: ConnectionView): string | null {
   const group = connection.group;
   if (group == null || group === "") return null;
   return group;
-}
-
-export function loadSidebarOrder(): SidebarOrder | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as SidebarOrder;
-    if (
-      parsed &&
-      Array.isArray(parsed.topLevel) &&
-      typeof parsed.groupItems === "object"
-    ) {
-      return parsed;
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return null;
-}
-
-export function saveSidebarOrder(order: SidebarOrder): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(order));
-  } catch {
-    // ignore write errors
-  }
 }
 
 export function normalizeSidebarOrder(

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -53,12 +54,34 @@ pub struct SshKey {
     pub passphrase: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", rename_all = "lowercase")]
+pub enum SidebarItem {
+    Connection { id: String },
+    Group { name: String },
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SidebarOrder {
+    pub top_level: Vec<SidebarItem>,
+    pub group_items: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SidebarState {
+    pub order: SidebarOrder,
+    pub collapsed_groups: HashMap<String, bool>,
+    pub transfer_locks: HashMap<String, bool>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VaultData {
     #[serde(default)]
     pub connections: Vec<Connection>,
     #[serde(default)]
     pub keys: Vec<SshKey>,
+    #[serde(default)]
+    pub sidebar_state: Option<SidebarState>,
 }
 
 /// On-disk envelope: a plain JSON file containing the encrypted blob.
@@ -242,6 +265,21 @@ impl Vault {
         }
         guard.salt = None;
         guard.data = None;
+    }
+
+    // ---- Sidebar state ----------------------------------------------------
+
+    pub fn load_sidebar_state(&self) -> Result<SidebarState> {
+        let guard = self.inner.lock().unwrap();
+        let data = guard.data.as_ref().ok_or(Error::Locked)?;
+        Ok(data.sidebar_state.clone().unwrap_or_default())
+    }
+
+    pub fn save_sidebar_state(&self, state: SidebarState) -> Result<()> {
+        self.mutate(|data| {
+            data.sidebar_state = Some(state);
+            Ok(())
+        })
     }
 
     /// Re-encrypt and write the current data to disk.

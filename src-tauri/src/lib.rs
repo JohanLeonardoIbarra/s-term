@@ -11,7 +11,7 @@ use error::{Error, Result};
 use pty::{detect_terminals, LocalPty, TerminalInfo};
 use session::SessionManager;
 use ssh::SshSession;
-use vault::{AuthMethod, ConnectionInput, ConnectionView, KeyInput, KeyView, Vault};
+use vault::{AuthMethod, ConnectionInput, ConnectionView, KeyInput, KeyView, SidebarState, Vault};
 
 // ---- CSV import result ----------------------------------------------------
 
@@ -103,6 +103,16 @@ fn read_key_file(path: String) -> Result<String> {
 fn export_connections(path: String, password: String, vault: State<'_, Vault>) -> Result<()> {
     let bytes = vault.export_bytes(&password)?;
     std::fs::write(&path, bytes).map_err(Error::from)
+}
+
+#[tauri::command]
+fn load_sidebar_state(vault: State<'_, Vault>) -> Result<SidebarState> {
+    vault.load_sidebar_state()
+}
+
+#[tauri::command]
+fn save_sidebar_state(state: SidebarState, vault: State<'_, Vault>) -> Result<()> {
+    vault.save_sidebar_state(state)
 }
 
 #[tauri::command]
@@ -330,6 +340,8 @@ pub fn run() {
             read_key_file,
             export_connections,
             import_connections,
+            load_sidebar_state,
+            save_sidebar_state,
             download_csv_template,
             import_csv,
             list_terminals,

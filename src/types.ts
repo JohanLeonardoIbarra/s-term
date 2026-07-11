@@ -70,3 +70,18 @@ export interface PtyExitEvent {
   id: string;
   code: number | null;
 }
+
+export type SidebarItem =
+  | { type: "connection"; id: string }
+  | { type: "group"; name: string };
+
+export interface SidebarOrder {
+  topLevel: SidebarItem[];
+  groupItems: Record<string, string[]>;
+}
+
+export interface SidebarState {
+  order: SidebarOrder;
+  collapsedGroups: Record<string, boolean>;
+  transferLocks: Record<string, boolean>;
+}
