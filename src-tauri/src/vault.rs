@@ -55,19 +55,21 @@ pub struct SshKey {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "value", rename_all = "lowercase")]
+#[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum SidebarItem {
     Connection { id: String },
     Group { name: String },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SidebarOrder {
     pub top_level: Vec<SidebarItem>,
     pub group_items: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SidebarState {
     pub order: SidebarOrder,
     pub collapsed_groups: HashMap<String, bool>,

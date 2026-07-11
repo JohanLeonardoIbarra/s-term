@@ -8,8 +8,9 @@ function getGroup(connection: ConnectionView): string | null {
 
 export function normalizeSidebarOrder(
   connections: ConnectionView[],
-  order: SidebarOrder | null
+  order: SidebarOrder | null | undefined
 ): SidebarOrder {
+  const validOrder = order && Array.isArray(order.topLevel) ? order : null;
   const connectionById = new Map<string, ConnectionView>();
   const groups = new Set<string>();
   const ungroupedIds: string[] = [];
@@ -30,7 +31,7 @@ export function normalizeSidebarOrder(
 
   const groupNames = Array.from(groups).sort((a, b) => a.localeCompare(b));
 
-  if (!order) {
+  if (!validOrder) {
     const topLevel: SidebarItem[] = [
       ...ungroupedIds.map((id) => ({ type: "connection" as const, id })),
       ...groupNames.map((name) => ({ type: "group" as const, name })),
@@ -45,7 +46,7 @@ export function normalizeSidebarOrder(
   const topLevel: SidebarItem[] = [];
   const seenTopLevel = new Set<string>();
 
-  for (const item of order.topLevel) {
+  for (const item of validOrder.topLevel) {
     if (item.type === "connection") {
       const c = connectionById.get(item.id);
       if (c && getGroup(c) == null && !seenTopLevel.has(item.id)) {
@@ -82,7 +83,7 @@ export function normalizeSidebarOrder(
   for (const name of groupNames) {
     const ids: string[] = [];
     const seen = new Set<string>();
-    const saved = order.groupItems[name] ?? [];
+    const saved = validOrder.groupItems[name] ?? [];
     for (const id of saved) {
       const c = connectionById.get(id);
       if (c && getGroup(c) === name && !seen.has(id)) {
