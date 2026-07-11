@@ -59,7 +59,9 @@ export default function ConnectionRow({
         disabled={disabled}
         title={`${connection.username}@${connection.host}:${connection.port}`}
       >
-        <span className={`${styles.name} code-md`}>{connection.name}</span>
+        <span className={`${styles.name} code-md`} title={connection.name}>
+          {connection.name}
+        </span>
         <span className={`${styles.sub} code-sm`}>
           {connection.username}@{connection.host}
         </span>

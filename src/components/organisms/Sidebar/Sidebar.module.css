@@ -101,6 +101,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  padding-left: 8px;
   display: flex;
   align-items: center;
   gap: 4px;

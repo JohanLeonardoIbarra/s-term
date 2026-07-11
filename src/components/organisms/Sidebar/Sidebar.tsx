@@ -38,7 +38,7 @@ function GroupItem({ name, groupConnections, collapsed, onToggle, onReorder, ren
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const isLeftFifth = x < rect.width / 5;
+    const isLeftFifth = x < rect.width / 15;
     setIsHoveringLeft(isLeftFifth);
   };
   
